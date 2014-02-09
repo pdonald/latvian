@@ -13,13 +13,11 @@ namespace Latvian.Tokenization.Automata
         public Graphviz(string path = null)
         {
             Path = path ?? @"C:\Program Files (x86)\Graphviz2.36\bin";
+            LeftToRight = true;
         }
 
-        public string Path
-        {
-            get;
-            set;
-        }
+        public string Path { get; set; }
+        public bool LeftToRight { get; set; }
 
         public void AddShape(string name, string shape)
         {
@@ -49,7 +47,8 @@ namespace Latvian.Tokenization.Automata
 
         public override string ToString()
         {
-            return "digraph g {" + Environment.NewLine + sb.ToString() + "}";
+            string direction = LeftToRight ? @"rankdir=""LR""; " : "";
+            return "digraph g { " + direction + Environment.NewLine + sb.ToString() + "}";
         }
 
         public void SaveImage(string filename)

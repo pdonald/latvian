@@ -329,7 +329,7 @@ namespace Latvian.Tokenization.Automata
             public void AddTransition(CharRange input, State to)
             {
                 if (transitions.Keys.Any(range => range.Overlaps(input)))
-                    throw new ArgumentException("Already contains a transition for this input or it overlaps", "input");
+                    throw new ArgumentOutOfRangeException("Already contains a transition for this input or it overlaps", "input");
 
                 transitions[input] = to;
 
