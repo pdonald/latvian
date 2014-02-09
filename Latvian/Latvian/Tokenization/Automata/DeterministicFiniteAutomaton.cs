@@ -253,10 +253,12 @@ namespace Latvian.Tokenization.Automata
         public class State
         {
             private readonly Dictionary<CharRange, State> transitions = new Dictionary<CharRange, State>();
+
+            // optimization
+            // arrays are faster than enumerating through dictionary
             private CharRange[] ranges = new CharRange[0];
             private State[] states = new State[0];
-            private CharRange first;
-            private State firstState;
+            private CharRange firstRange;
             private int count;
 
             public bool IsFinal
@@ -278,7 +280,7 @@ namespace Latvian.Tokenization.Automata
 
             public IEnumerable<State> Transitions
             {
-                get { return transitions.Values.ToArray().Distinct(); }
+                get { return transitions.Values.Distinct().ToArray(); }
             }
 
             public State this[char c]
@@ -287,13 +289,13 @@ namespace Latvian.Tokenization.Automata
                 // it gets called a gazillion times
                 get
                 {
-                    if (count == -1)
-                        return null;
                     if (count == 0)
-                        return c >= first.From && c <= first.To ? states[0] : null;
+                        return null;
+                    if (count == 1)
+                        return c >= firstRange.From && c <= firstRange.To ? states[0] : null;
 
                     int low = 0;
-                    int high = count;
+                    int high = count - 1;
 
                     while (low <= high)
                     {
@@ -334,8 +336,7 @@ namespace Latvian.Tokenization.Automata
                 Minimize();
             }
 
-            // this is not used
-            public void SetTransition(CharRange input, State to)
+            public void SetTransition(CharRange input, State to) // not used by NFA.ToDfa()
             {
                 CharRange overlaping = transitions.Keys.SingleOrDefault(range => range.Overlaps(input));
 
@@ -360,7 +361,6 @@ namespace Latvian.Tokenization.Automata
             {
                 // overlaps
                 // doesn't overlap
-                
                 // throw new NotImplementedException();
 
                 transitions.Remove(input);
@@ -375,18 +375,14 @@ namespace Latvian.Tokenization.Automata
 
             public void Minimize()
             {
-                // this makes it so much faster!!!!!
-                ranges = transitions.Keys.OrderBy(r => r.From).ThenBy(r => r.To).ToArray();
-                states = new State[ranges.Length];
-                for (int i = 0; i < states.Length; i++)
-                    states[i] = transitions[ranges[i]];
+                // todo: join ranges, maybe?
 
-                count = ranges.Length - 1;
-                if (ranges.Length > 0)
-                {
-                    first = ranges[0];
-                    firstState = states[0];
-                }
+                // this makes it so much faster!!!!!
+                var sorted = transitions.OrderBy(kp => kp.Key.From).ThenBy(kp => kp.Key.To);
+                ranges = sorted.Select(kp => kp.Key).ToArray();
+                states = sorted.Select(kp => kp.Value).ToArray();
+                count = ranges.Length;
+                if (count > 0) firstRange = ranges[0];
             }
 
             public override string ToString()
