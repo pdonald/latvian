@@ -33,8 +33,21 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PartOfSpeechTagging\Evaluation\CrossValidation.cs" />
+    <Compile Include="PartOfSpeechTagging\Evaluation\Tester.cs" />
+    <Compile Include="PartOfSpeechTagging\ITagger.cs" />
+    <Compile Include="PartOfSpeechTagging\LatvianTagger.cs" />
+    <Compile Include="PartOfSpeechTagging\Perceptron\FeatureTemplates.cs" />
+    <Compile Include="PartOfSpeechTagging\Perceptron\Helpers\IndexedSentence.cs" />
+    <Compile Include="PartOfSpeechTagging\Perceptron\Helpers\XorShiftRandom.cs" />
+    <Compile Include="PartOfSpeechTagging\Perceptron\Perceptron.cs" />
+    <Compile Include="PartOfSpeechTagging\Perceptron\PerceptronTagger.cs" />
+    <Compile Include="PartOfSpeechTagging\Tag.cs" />
+    <Compile Include="PartOfSpeechTagging\Token.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tokenization\Automata\AutomatonTokenizer.cs" />
     <Compile Include="Tokenization\Automata\CharRange.cs" />
