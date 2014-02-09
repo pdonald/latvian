@@ -8,7 +8,7 @@
 using DFA = DeterministicFiniteAutomaton;
 
 DFA.State s1 = new DFA.State();
-DFA.State s2 = new DFA.State() { IsFinal = "true" };
+DFA.State s2 = new DFA.State() { IsFinal = true };
 
 s1.AddTransition('a', s2);
 s1.AddTransition('b', s2);
@@ -34,7 +34,7 @@ Assert.IsTrue(az.Contains(c));
 Assert.IsFalse(az.Overlaps(digit));
 
 DFA.State s1 = new DFA.State();
-DFA.State s2 = new DFA.State() { IsFinal = "true" };
+DFA.State s2 = new DFA.State() { IsFinal = true };
 
 s1.AddTransition(digit, s2);
 s1.AddTransition(az, s2);
@@ -57,8 +57,8 @@ If you know it's not an accident and you want to override it, you can use `DFA.S
 
 ```csharp
 DFA.State s1 = new DFA.State();
-DFA.State s2 = new DFA.State() { IsFinal = "true" };
-DFA.State s3 = new DFA.State() { IsFinal = "true" };
+DFA.State s2 = new DFA.State() { IsFinal = true };
+DFA.State s3 = new DFA.State() { IsFinal = true };
 
 s1.SetTransition(digit, s2);
 s1.SetTransition(az, s2);
@@ -151,12 +151,12 @@ class State<T> : DFA.State
 This would let you asign custom data to states:
 
 ```csharp
-State<string> s1 = new State<string> { Name = "A" };
-State<string> s2 = new State<string> { Name = "B" };
-State<string> s3 = new State<string> { Name = "C" };
-State<string> s4 = new State<string> { Name = "D" };
-State<string> s5 = new State<string> { Name = "E", IsFinal = true };
-State<string> s6 = new State<string> { Name = "F", IsFinal = true };
+State<string> s1 = new State<string> { Name = "1" };
+State<string> s2 = new State<string> { Name = "2" };
+State<string> s3 = new State<string> { Name = "3" };
+State<string> s4 = new State<string> { Name = "4" };
+State<string> s5 = new State<string> { Name = "5", IsFinal = true };
+State<string> s6 = new State<string> { Name = "6", IsFinal = true };
 
 s1.AddTransition('h', s2);
 s2.AddTransition('a', s3);
@@ -169,7 +169,7 @@ s2.AddTransition('m', s6);
 s6.AddTransition('m', s6);
 s6.Values.Add("deep in thought");
 
-public static string Mood(State<string> start, string text)
+static string Mood(State<string> start, string text)
 {
     if (start == null)
         return null;
