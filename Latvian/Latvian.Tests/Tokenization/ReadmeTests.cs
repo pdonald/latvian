@@ -32,7 +32,7 @@ namespace Latvian.Tests.Tokenization
             foreach (Token token in tokenizer.Tokenize(text))
             {
                 Debug.WriteLine("Line {0}: Pos {1}: Type: {2} Token: {3}",
-                    token.LineStart, token.Start, token.GetType(), token.Text);
+                    token.Line, token.Position, token.GetType(), token.Text);
 
                 tokens.Add(token);
 
@@ -49,84 +49,84 @@ namespace Latvian.Tests.Tokenization
 
             Assert.AreEqual("Sveika", tokens[0].Text);
             Assert.AreEqual(typeof(WordToken), tokens[0].GetType());
-            Assert.AreEqual(0, tokens[0].Start);
-            Assert.AreEqual(6, tokens[0].End);
-            Assert.AreEqual(0, tokens[0].LineStart);
+            Assert.AreEqual(0, tokens[0].Position);
+            Assert.AreEqual(6, tokens[0].PositionEnd);
+            Assert.AreEqual(0, tokens[0].Line);
             Assert.AreEqual(0, tokens[0].LineEnd);
-            Assert.AreEqual(0, tokens[0].LinePosStart);
-            Assert.AreEqual(6, tokens[0].LinePosEnd);
+            Assert.AreEqual(0, tokens[0].LinePosition);
+            Assert.AreEqual(6, tokens[0].LinePositionEnd);
 
             Assert.AreEqual(",", tokens[1].Text);
             Assert.AreEqual(typeof(PunctuationToken), tokens[1].GetType());
-            Assert.AreEqual(6, tokens[1].Start);
-            Assert.AreEqual(7, tokens[1].End);
-            Assert.AreEqual(0, tokens[1].LineStart);
+            Assert.AreEqual(6, tokens[1].Position);
+            Assert.AreEqual(7, tokens[1].PositionEnd);
+            Assert.AreEqual(0, tokens[1].Line);
             Assert.AreEqual(0, tokens[1].LineEnd);
-            Assert.AreEqual(6, tokens[1].LinePosStart);
-            Assert.AreEqual(7, tokens[1].LinePosEnd);
+            Assert.AreEqual(6, tokens[1].LinePosition);
+            Assert.AreEqual(7, tokens[1].LinePositionEnd);
 
             Assert.AreEqual("pasaule", tokens[2].Text);
             Assert.AreEqual(typeof(WordToken), tokens[2].GetType());
-            Assert.AreEqual(8, tokens[2].Start);
-            Assert.AreEqual(15, tokens[2].End);
-            Assert.AreEqual(0, tokens[2].LineStart);
+            Assert.AreEqual(8, tokens[2].Position);
+            Assert.AreEqual(15, tokens[2].PositionEnd);
+            Assert.AreEqual(0, tokens[2].Line);
             Assert.AreEqual(0, tokens[2].LineEnd);
-            Assert.AreEqual(8, tokens[2].LinePosStart);
-            Assert.AreEqual(15, tokens[2].LinePosEnd);
+            Assert.AreEqual(8, tokens[2].LinePosition);
+            Assert.AreEqual(15, tokens[2].LinePositionEnd);
 
             Assert.AreEqual("!", tokens[3].Text);
             Assert.AreEqual(typeof(PunctuationToken), tokens[3].GetType());
-            Assert.AreEqual(15, tokens[3].Start);
-            Assert.AreEqual(16, tokens[3].End);
-            Assert.AreEqual(0, tokens[3].LineStart);
+            Assert.AreEqual(15, tokens[3].Position);
+            Assert.AreEqual(16, tokens[3].PositionEnd);
+            Assert.AreEqual(0, tokens[3].Line);
             Assert.AreEqual(0, tokens[3].LineEnd);
-            Assert.AreEqual(15, tokens[3].LinePosStart);
-            Assert.AreEqual(16, tokens[3].LinePosEnd);
+            Assert.AreEqual(15, tokens[3].LinePosition);
+            Assert.AreEqual(16, tokens[3].LinePositionEnd);
 
             Assert.AreEqual("Man", tokens[4].Text);
             Assert.AreEqual(typeof(WordToken), tokens[4].GetType());
-            Assert.AreEqual(17, tokens[4].Start);
-            Assert.AreEqual(20, tokens[4].End);
-            Assert.AreEqual(0, tokens[4].LineStart);
+            Assert.AreEqual(17, tokens[4].Position);
+            Assert.AreEqual(20, tokens[4].PositionEnd);
+            Assert.AreEqual(0, tokens[4].Line);
             Assert.AreEqual(0, tokens[4].LineEnd);
-            Assert.AreEqual(17, tokens[4].LinePosStart);
-            Assert.AreEqual(20, tokens[4].LinePosEnd);
+            Assert.AreEqual(17, tokens[4].LinePosition);
+            Assert.AreEqual(20, tokens[4].LinePositionEnd);
 
             Assert.AreEqual("iet", tokens[5].Text);
             Assert.AreEqual(typeof(WordToken), tokens[5].GetType());
-            Assert.AreEqual(21, tokens[5].Start);
-            Assert.AreEqual(24, tokens[5].End);
-            Assert.AreEqual(0, tokens[5].LineStart);
+            Assert.AreEqual(21, tokens[5].Position);
+            Assert.AreEqual(24, tokens[5].PositionEnd);
+            Assert.AreEqual(0, tokens[5].Line);
             Assert.AreEqual(0, tokens[5].LineEnd);
-            Assert.AreEqual(21, tokens[5].LinePosStart);
-            Assert.AreEqual(24, tokens[5].LinePosEnd);
+            Assert.AreEqual(21, tokens[5].LinePosition);
+            Assert.AreEqual(24, tokens[5].LinePositionEnd);
 
             Assert.AreEqual("labi", tokens[6].Text);
             Assert.AreEqual(typeof(WordToken), tokens[6].GetType());
-            Assert.AreEqual(25, tokens[6].Start);
-            Assert.AreEqual(29, tokens[6].End);
-            Assert.AreEqual(0, tokens[6].LineStart);
+            Assert.AreEqual(25, tokens[6].Position);
+            Assert.AreEqual(29, tokens[6].PositionEnd);
+            Assert.AreEqual(0, tokens[6].Line);
             Assert.AreEqual(0, tokens[6].LineEnd);
-            Assert.AreEqual(25, tokens[6].LinePosStart);
-            Assert.AreEqual(29, tokens[6].LinePosEnd);
+            Assert.AreEqual(25, tokens[6].LinePosition);
+            Assert.AreEqual(29, tokens[6].LinePositionEnd);
 
             Assert.AreEqual(".", tokens[7].Text);
             Assert.AreEqual(typeof(PunctuationToken), tokens[7].GetType());
-            Assert.AreEqual(29, tokens[7].Start);
-            Assert.AreEqual(30, tokens[7].End);
-            Assert.AreEqual(0, tokens[7].LineStart);
+            Assert.AreEqual(29, tokens[7].Position);
+            Assert.AreEqual(30, tokens[7].PositionEnd);
+            Assert.AreEqual(0, tokens[7].Line);
             Assert.AreEqual(0, tokens[7].LineEnd);
-            Assert.AreEqual(29, tokens[7].LinePosStart);
-            Assert.AreEqual(30, tokens[7].LinePosEnd);
+            Assert.AreEqual(29, tokens[7].LinePosition);
+            Assert.AreEqual(30, tokens[7].LinePositionEnd);
 
             Assert.AreEqual("2014-01-01", tokens[11].Text);
             Assert.AreEqual(typeof(DateToken), tokens[11].GetType());
-            Assert.AreEqual(50, tokens[11].Start);
-            Assert.AreEqual(60, tokens[11].End);
-            Assert.AreEqual(0, tokens[11].LineStart);
+            Assert.AreEqual(50, tokens[11].Position);
+            Assert.AreEqual(60, tokens[11].PositionEnd);
+            Assert.AreEqual(0, tokens[11].Line);
             Assert.AreEqual(0, tokens[11].LineEnd);
-            Assert.AreEqual(50, tokens[11].LinePosStart);
-            Assert.AreEqual(60, tokens[11].LinePosEnd);
+            Assert.AreEqual(50, tokens[11].LinePosition);
+            Assert.AreEqual(60, tokens[11].LinePositionEnd);
 
             Assert.AreEqual(tokens[11], dateToken);
             Assert.AreEqual("01.01.2014", dateToken.DateTime.ToString("dd/MM/yyyy"));
@@ -179,20 +179,20 @@ namespace Latvian.Tests.Tokenization
         public void Position()
         {
             Token[] tokens = new LatvianTokenizer().Tokenize("Vārds.").ToArray();
-            Assert.AreEqual(0, tokens[0].Start);
-            Assert.AreEqual(5, tokens[0].End);
-            Assert.AreEqual(0, tokens[0].LineStart);
+            Assert.AreEqual(0, tokens[0].Position);
+            Assert.AreEqual(5, tokens[0].PositionEnd);
+            Assert.AreEqual(0, tokens[0].Line);
             Assert.AreEqual(0, tokens[0].LineEnd);
-            Assert.AreEqual(0, tokens[0].LinePosStart);
-            Assert.AreEqual(5, tokens[0].LinePosEnd);
+            Assert.AreEqual(0, tokens[0].LinePosition);
+            Assert.AreEqual(5, tokens[0].LinePositionEnd);
 
             Assert.AreEqual(".", tokens[1].Text);
-            Assert.AreEqual(5, tokens[1].Start);
-            Assert.AreEqual(6, tokens[1].End);
-            Assert.AreEqual(0, tokens[1].LineStart);
+            Assert.AreEqual(5, tokens[1].Position);
+            Assert.AreEqual(6, tokens[1].PositionEnd);
+            Assert.AreEqual(0, tokens[1].Line);
             Assert.AreEqual(0, tokens[1].LineEnd);
-            Assert.AreEqual(5, tokens[1].LinePosStart);
-            Assert.AreEqual(6, tokens[1].LinePosEnd);
+            Assert.AreEqual(5, tokens[1].LinePosition);
+            Assert.AreEqual(6, tokens[1].LinePositionEnd);
         }
 
         [Test]

@@ -8,12 +8,12 @@ namespace Latvian.Tokenization
     {
         public string Text { get; set; }
 
-        public int Start { get; set; }
-        public int End { get; set; }
-        public int LineStart { get; set; }
+        public int Position { get; set; }
+        public int PositionEnd { get; set; }
+        public int Line { get; set; }
         public int LineEnd { get; set; }
-        public int LinePosStart { get; set; }
-        public int LinePosEnd { get; set; }
+        public int LinePosition { get; set; }
+        public int LinePositionEnd { get; set; }
         public int Length { get { return Text.Length; } }
 
         public override string ToString()

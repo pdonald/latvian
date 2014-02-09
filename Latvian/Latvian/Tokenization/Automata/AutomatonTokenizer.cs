@@ -127,12 +127,12 @@ namespace Latvian.Tokenization.Automata
             Func<Token> createToken = () =>
             {
                 Token token = values != null && values.Length > 0 ? activators[values[0]]() : new Token();
-                token.LineStart = lineStart;
+                token.Line = lineStart;
                 token.LineEnd = lineEnd;
-                token.LinePosStart = linePosStart;
-                token.LinePosEnd = linePosEnd;
-                token.Start = start;
-                token.End = end;
+                token.LinePosition = linePosStart;
+                token.LinePositionEnd = linePosEnd;
+                token.Position = start;
+                token.PositionEnd = end;
                 token.Text = reader.Substring(start, end);
                 return token;
             };

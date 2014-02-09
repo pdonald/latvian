@@ -21,7 +21,7 @@ class Program
         foreach (Token token in tokenizer.Tokenize(text))
         {
             Console.WriteLine("Line {0}: Pos {1}: Type: {2} Token: {3}",
-                token.LineStart, token.Start, token.GetType(), token.Text);
+                token.Line, token.Position, token.GetType(), token.Text);
 
             if (token is DateToken)
             {
@@ -88,20 +88,20 @@ Assert.AreEqual(1, tokens.Count());
 ```csharp
 Token[] tokens = new LatvianTokenizer().Tokenize("Vārds.").ToArray();
 
-Assert.AreEqual(0, tokens[0].Start);
-Assert.AreEqual(5, tokens[0].End);
-Assert.AreEqual(0, tokens[0].LineStart);
+Assert.AreEqual(0, tokens[0].Position);
+Assert.AreEqual(5, tokens[0].PositionEnd);
+Assert.AreEqual(0, tokens[0].Line);
 Assert.AreEqual(0, tokens[0].LineEnd);
-Assert.AreEqual(0, tokens[0].LinePosStart);
-Assert.AreEqual(5, tokens[0].LinePosEnd);
+Assert.AreEqual(0, tokens[0].LinePosition);
+Assert.AreEqual(5, tokens[0].LinePositionEnd);
 
 Assert.AreEqual(".", tokens[1].Text);
-Assert.AreEqual(5, tokens[1].Start);
-Assert.AreEqual(6, tokens[1].End);
-Assert.AreEqual(0, tokens[1].LineStart);
+Assert.AreEqual(5, tokens[1].Position);
+Assert.AreEqual(6, tokens[1].PositionEnd);
+Assert.AreEqual(0, tokens[1].Line);
 Assert.AreEqual(0, tokens[1].LineEnd);
-Assert.AreEqual(5, tokens[1].LinePosStart);
-Assert.AreEqual(6, tokens[1].LinePosEnd);
+Assert.AreEqual(5, tokens[1].LinePosition);
+Assert.AreEqual(6, tokens[1].LinePositionEnd);
 ```
 
 Token type can be determined by looking at its class type. Casting to a more specific type will reveal some other useful properties. For example, `DateToken` has a `DateTime` property which returns the parsed date as `System.DateTime`. Token types are in the `Latvian.Tokenization.Tokens` namespace.
@@ -133,11 +133,13 @@ Assert.AreEqual("456", tokens[2].Text);
 There are extension methods for tokenizing a `Stream` and `TextReader` so that you don't have load the whole text in memory:
 
 ```csharp
-using (FileStream stream = new FileStream("file.txt", FileMode.Open, FileAccess.Read)))
+using (FileStream stream = new FileStream("file.txt", FileMode.Open, FileAccess.Read))) {
     Token[] tokens = new LatvianTokenizer().Tokenize(stream).ToArray();
+}
 
-using (StreamReader reader = new StreamReader("file.txt"))
+using (StreamReader reader = new StreamReader("file.txt")) {
     Token[] tokens = new LatvianTokenizer().Tokenize(reader).ToArray();
+}
 ```
 
 ## Customization
