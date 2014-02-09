@@ -36,6 +36,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Tokenization\Automata\AutomatonTokenizer.cs" />
+    <Compile Include="Tokenization\Automata\CharRange.cs" />
+    <Compile Include="Tokenization\Automata\DeterministicFiniteAutomaton.cs" />
+    <Compile Include="Tokenization\Automata\Graphviz.cs" />
+    <Compile Include="Tokenization\Automata\NondeterministicFiniteAutomaton.cs" />
+    <Compile Include="Tokenization\Automata\RegularExpression.cs" />
+    <Compile Include="Tokenization\ITokenizer.cs" />
+    <Compile Include="Tokenization\LatvianTokenizer.cs" />
+    <Compile Include="Tokenization\Tokens.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Tokenization\README.md" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
