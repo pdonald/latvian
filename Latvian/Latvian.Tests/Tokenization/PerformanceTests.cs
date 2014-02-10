@@ -47,20 +47,19 @@ namespace Latvian.Tests.Tokenization
 
             Debug.WriteLine("Load: {0:0.000} ms", timer.ElapsedMilliseconds / count);
             Debug.WriteLine("Load x{1}: {0:0.000} ms", timer.ElapsedMilliseconds, count);
+
+            File.Delete(filename);
         }
 
         [Test]
         public void TokenizeString()
         {
             int count = 5;
-            int megabytes = 10;
-            int size = megabytes * 1024 * 1024;;
+            int mebibytes = 10;
+            int size = mebibytes * 1024 * 1024;
             
-            string sourceText = File.ReadAllText(@"C:\Users\peteris\Desktop\darba likums.txt");
-            StringBuilder sb = new StringBuilder(size);
-            while (sb.Length < size)
-                sb.Append(sourceText);
-            string text = sb.ToString();
+            string text = DarbaLikums(size);
+            Assert.AreEqual(size, text.Length);
 
             LatvianTokenizer tokenizer = new LatvianTokenizer();
 
@@ -78,8 +77,8 @@ namespace Latvian.Tests.Tokenization
 
             Assert.IsTrue(tokenCount > 0);
 
-            Debug.WriteLine("Tokenize string ({1} MiB): {0:0.000} ms", timer.ElapsedMilliseconds / count, megabytes);
-            Debug.WriteLine("Tokenize string: {0:0.000} MB/s", (megabytes * count) / timer.Elapsed.TotalSeconds, megabytes);
+            Debug.WriteLine("Tokenize string ({1} MiB): {0:0.000} ms", timer.ElapsedMilliseconds / count, mebibytes);
+            Debug.WriteLine("Tokenize string: {0:0.000} MB/s", (mebibytes * count) / timer.Elapsed.TotalSeconds, mebibytes);
             Debug.WriteLine("Tokenize string: {0:0.000} tokens/s", tokenCount / timer.Elapsed.TotalSeconds);
         }
 
@@ -87,17 +86,15 @@ namespace Latvian.Tests.Tokenization
         public void TokenizeFile()
         {
             int count = 5;
-            int megabytes = 10;
-            int size = megabytes * 1024 * 1024; ;
+            int mebibytes = 10;
+            int size = mebibytes * 1024 * 1024; ;
 
-            string sourceText = File.ReadAllText(@"C:\Users\peteris\Desktop\darba likums.txt");
-            StringBuilder sb = new StringBuilder(size);
-            while (sb.Length < size)
-                sb.Append(sourceText);
-            string text = sb.ToString();
+            string text = DarbaLikums(size);
+            Assert.AreEqual(size, text.Length);
 
             string filename = Path.GetTempFileName();
             File.WriteAllText(filename, text);
+            Assert.AreEqual(size, File.ReadAllText(filename).Length);
 
             LatvianTokenizer tokenizer = new LatvianTokenizer();
 
@@ -118,9 +115,29 @@ namespace Latvian.Tests.Tokenization
 
             Assert.IsTrue(tokenCount > 0);
 
-            Debug.WriteLine("Tokenize file ({1} MiB): {0:0.000} ms", timer.ElapsedMilliseconds / count, megabytes);
-            Debug.WriteLine("Tokenize file: {0:0.000} MB/s", (megabytes * count) / timer.Elapsed.TotalSeconds, megabytes);
+            Debug.WriteLine("Tokenize file ({1} MiB): {0:0.000} ms", timer.ElapsedMilliseconds / count, mebibytes);
+            Debug.WriteLine("Tokenize file: {0:0.000} MB/s", (mebibytes * count) / timer.Elapsed.TotalSeconds, mebibytes);
             Debug.WriteLine("Tokenize file: {0:0.000} tokens/s", tokenCount / timer.Elapsed.TotalSeconds);
+
+            File.Delete(filename);
+        }
+
+        private string DarbaLikums(int? desiredLength = null)
+        {
+            string resourceName = "Latvian.Tests.Resources.DarbaLikums.txt";
+            string text = null;
+            using (StreamReader reader = new StreamReader(System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName)))
+                text = reader.ReadToEnd();
+
+            if (desiredLength == null || text.Length == desiredLength)
+                return text;
+            if (text.Length > desiredLength) 
+                return text.Substring(0, desiredLength.Value);
+
+            StringBuilder sb = new StringBuilder(desiredLength.Value);
+            while (sb.Length < desiredLength.Value)
+                sb.Append(text.Substring(0, System.Math.Min(text.Length, desiredLength.Value - sb.Length)));
+            return sb.ToString();
         }
     }
 }
