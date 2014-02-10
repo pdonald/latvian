@@ -37,7 +37,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Tokenization\Automata\DfaTests.cs" />
     <Compile Include="Tokenization\Automata\NfaTests.cs" />
     <Compile Include="Tokenization\LatvianTokenizerTests.cs" />

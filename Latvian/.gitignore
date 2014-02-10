@@ -1,6 +1,6 @@
 # Build files
-obj/
 bin/
+obj/
 TestResults/
 
 # Visual Studio
