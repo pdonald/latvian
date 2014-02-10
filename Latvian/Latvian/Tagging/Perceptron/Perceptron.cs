@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 
 namespace Latvian.Tagging.Perceptron
@@ -66,6 +67,25 @@ namespace Latvian.Tagging.Perceptron
             }
 
             updateCount = 0;
+        }
+
+        public void RemoveInsignificantWeights(double threshold)
+        {
+            foreach (T tag in weights.Keys.ToArray())
+            {
+                foreach (Feature feature in weights[tag].Keys.ToArray())
+                {
+                    if (Math.Abs(weights[tag][feature].Value) < threshold)
+                    {
+                        weights[tag].Remove(feature);
+                    }
+                }
+
+                if (weights[tag].Count == 0)
+                {
+                    weights.Remove(tag);
+                }
+            }
         }
 
         protected class Weight
@@ -175,8 +195,6 @@ namespace Latvian.Tagging.Perceptron
 
     public class Perceptron : Perceptron<Tag>
     {
-        public double WeightThreshold { get; set; }
-
         public void Save(Stream stream)
         {
             using (BinaryWriter writer = new BinaryWriter(stream))
@@ -190,9 +208,6 @@ namespace Latvian.Tagging.Perceptron
 
                     foreach (Feature feature in weights[tag].Keys)
                     {
-                        if (Math.Abs(weights[tag][feature].Value) < WeightThreshold)
-                            continue;
-
                         writer.Write(feature.Name);
                         writer.Write(feature.Value);
                         writer.Write(weights[tag][feature].Value);
@@ -211,15 +226,13 @@ namespace Latvian.Tagging.Perceptron
                 for (int t = 0; t < tagCount; t++)
                 {
                     Tag tag = new Tag(reader.ReadString());
+                    weights[tag] = new Dictionary<Feature, Weight>();
+
                     int featureCount = reader.ReadInt32();
                     for (int f = 0; f < featureCount; f++)
                     {
                         Feature feature = new Feature(reader.ReadString(), reader.ReadString());
                         Weight weight = new Weight { Value = reader.ReadDouble() };
-                        
-                        if (Math.Abs(weight.Value) < WeightThreshold)
-                            continue;
-
                         weights[tag].Add(feature, weight);
                     }
                 }

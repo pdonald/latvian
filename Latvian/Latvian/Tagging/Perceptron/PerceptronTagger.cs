@@ -187,9 +187,10 @@ namespace Latvian.Tagging.Perceptron
 
             if (Average)
             {
-                perceptron.WeightThreshold = WeightThreshold;
                 perceptron.AverageWeights();
             }
+
+            perceptron.RemoveInsignificantWeights(WeightThreshold);
         }
 
         public void Tag(IEnumerable<Sentence> sentences)
