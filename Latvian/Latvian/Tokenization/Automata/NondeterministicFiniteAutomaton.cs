@@ -12,6 +12,68 @@ namespace Latvian.Tokenization.Automata
         public State Start { get; set; }
         public State Exit { get; set; }
 
+        public class State
+        {
+            private readonly Dictionary<CharRange, HashSet<State>> transitions = new Dictionary<CharRange, HashSet<State>>();
+            private readonly HashSet<State> emptyTransitions = new HashSet<State>();
+
+            public bool IsFinal
+            {
+                get;
+                set;
+            }
+
+            public int[] Values
+            {
+                get;
+                set;
+            }
+
+            public IEnumerable<CharRange> Alphabet
+            {
+                get { return transitions.Keys; }
+            }
+
+            public IEnumerable<State> Transitions
+            {
+                get { return transitions.Values.SelectMany(t => t).Distinct(); }
+            }
+
+            public HashSet<State> EmptyTransitions
+            {
+                get { return emptyTransitions; }
+            }
+
+            public IEnumerable<State> this[CharRange input]
+            {
+                get
+                {
+                    foreach (CharRange range in transitions.Keys.OrderBy(r => r))
+                        if (range.Contains(input))
+                            return transitions[range];
+                    return null;
+                }
+            }
+
+            public void AddTransition(CharRange input, State to)
+            {
+                if (!transitions.ContainsKey(input))
+                    transitions[input] = new HashSet<State>();
+
+                transitions[input].Add(to);
+            }
+
+            public void AddEmptyTransition(State to)
+            {
+                emptyTransitions.Add(to);
+            }
+
+            public override string ToString()
+            {
+                return (IsFinal ? "!" : ".") + (Values != null ? " [" + string.Join(", ", Values) + "]" : "");
+            }
+        }
+
         public IEnumerable<State> States
         {
             get
@@ -205,12 +267,13 @@ namespace Latvian.Tokenization.Automata
         }
         #endregion
 
+        #region Graph
         #if DEBUG
         public Graphviz ToGraph()
         {
-            IEnumerable<State> states = States;
-
             Graphviz graph = new Graphviz();
+
+            IEnumerable<State> states = States;
             Dictionary<State, string> labels = new Dictionary<State, string>();
 
             foreach (State state in states)
@@ -237,68 +300,6 @@ namespace Latvian.Tokenization.Automata
             return graph;
         }
         #endif
-
-        public class State
-        {
-            private readonly Dictionary<CharRange, HashSet<State>> transitions = new Dictionary<CharRange, HashSet<State>>();
-            private readonly HashSet<State> emptyTransitions = new HashSet<State>();
-
-            public bool IsFinal
-            {
-                get;
-                set;
-            }
-
-            public int[] Values
-            {
-                get;
-                set;
-            }
-
-            public IEnumerable<CharRange> Alphabet
-            {
-                get { return transitions.Keys; }
-            }
-
-            public IEnumerable<State> Transitions
-            {
-                get { return transitions.Values.SelectMany(t => t).Distinct(); }
-            }
-
-            public HashSet<State> EmptyTransitions
-            {
-                get { return emptyTransitions; }
-            }
-
-            public void AddTransition(CharRange input, State to)
-            {
-                if (!transitions.ContainsKey(input))
-                    transitions[input] = new HashSet<State>();
-
-                transitions[input].Add(to);
-            }
-
-            public void AddEmptyTransition(State to)
-            {
-                emptyTransitions.Add(to);
-            }
-
-            public IEnumerable<State> this[CharRange input]
-            {
-                get
-                {
-                    // todo: binary search or something
-                    foreach (CharRange range in transitions.Keys)
-                        if (range.Contains(input))
-                            return transitions[range];
-                    return null;
-                }
-            }
-
-            public override string ToString()
-            {
-                return (IsFinal ? "!" : ".") + (Values != null ? " [" + string.Join(", ", Values) + "]" : "");
-            }
-        }
+        #endregion
     }
 }
