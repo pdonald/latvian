@@ -28,7 +28,7 @@ This implementation supports char ranges.
 ```csharp
 CharRange digit = new CharRange('0', '9');
 CharRange az = new CharRange('a', 'z');
-CharRange colon = 'c'; // new CharRange('c', 'c');
+CharRange c = 'c'; // new CharRange('c', 'c');
 
 Assert.IsTrue(az.Contains(c));
 Assert.IsFalse(az.Overlaps(digit));
@@ -41,8 +41,8 @@ s1.AddTransition(az, s2);
 
 DFA dfa = new DFA() { Start = s1 };
 
-for (char c = '0'; c <= '9'; c++) Assert.IsTrue(dfa.IsMatch(c.ToString()));
-for (char c = 'a'; c <= 'z'; c++) Assert.IsTrue(dfa.IsMatch(c.ToString()));
+for (char i = '0'; i <= '9'; i++) Assert.IsTrue(dfa.IsMatch(i.ToString()));
+for (char i = 'a'; i <= 'z'; i++) Assert.IsTrue(dfa.IsMatch(i.ToString()));
 ```
 
 DFA has only one transition state for each input. If you try to add an input that already has a transition state associated with it, an exception will be thrown.
@@ -94,7 +94,7 @@ public static bool IsMatch(DFA.State start, string text)
     if (start == null)
         return false;
 
-    State current = start;
+    DFA.State current = start;
 
     foreach (char c in input)
     {
@@ -113,12 +113,14 @@ You can get all states in a `DFA` that are accessible from the start state with 
 You can save and restore the DFA from a stream with `DFA.Save(Stream)` and `DFA.Load(Stream)`.
 
 ```csharp
-using (Stream stream = new GZipStream(new FileStream("dfa.bin.gz", FileMode.Create, FileAccess.Write), CompressionLevel.Optimal))
+using (Stream stream = new GZipStream(new FileStream("dfa.bin.gz", 
+  FileMode.Create, FileAccess.Write), CompressionLevel.Optimal))
 {
     dfa.Save(stream);
 }
 
-using (Stream stream = new GZipStream(new FileStream("dfa.bin.gz", FileMode.Open, FileAccess.Read), CompressionMode.Decompress))
+using (Stream stream = new GZipStream(new FileStream("dfa.bin.gz", 
+  FileMode.Open, FileAccess.Read), CompressionMode.Decompress))
 {
     dfa.Load(stream);
 }
@@ -198,13 +200,13 @@ Assert.AreEqual(null, Mood(s1, "123"));
 
 If you compile the project in the Debug configuration, you can easily visualize a DFA.
 
-This will create the file contents for Graphiz.
+This will create the file contents for Graphviz's `dot`.
 
 ```csharp
-string s = dfa.ToGraph().ToString();
+string graph = dfa.ToGraph().ToString();
 ```
 
-If you have Graphiz installed in the right directory, all you need to do is:
+If you have Graphviz installed in the right directory, all you need to do is:
 
 ```csharp
 dfa.ToGraph().SaveImage(@"C:\Users\Me\Desktop\dfa.png");

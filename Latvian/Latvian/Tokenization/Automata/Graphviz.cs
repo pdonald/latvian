@@ -8,11 +8,12 @@ namespace Latvian.Tokenization.Automata
 {
     class Graphviz
     {
+        private const string DefaultPath = @"C:\Program Files (x86)\Graphviz2.36\bin";
         private StringBuilder sb = new StringBuilder();
 
-        public Graphviz(string path = null)
+        public Graphviz(string path = DefaultPath)
         {
-            Path = path ?? @"C:\Program Files (x86)\Graphviz2.36\bin";
+            Path = path;
             LeftToRight = true;
         }
 
@@ -70,6 +71,10 @@ namespace Latvian.Tokenization.Automata
                     string error = process.StandardError.ReadToEnd();
                     if (!string.IsNullOrWhiteSpace(error))
                         throw new Exception(error);
+                }
+                else
+                {
+                    throw new Exception("Could not launch Graphviz");
                 }
             }
         }

@@ -1,7 +1,6 @@
 ﻿using Latvian.Tokenization.Automata;
 
 using DFA = Latvian.Tokenization.Automata.DeterministicFiniteAutomaton;
-using NFA = Latvian.Tokenization.Automata.NondeterministicFiniteAutomaton;
 
 using NUnit.Framework;
 
