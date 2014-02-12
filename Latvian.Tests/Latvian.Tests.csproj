@@ -33,11 +33,15 @@
     <Reference Include="NUnit.Framework">
       <HintPath>$(SolutionDir)\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Tokenization\Automata\DfaTests.cs" />
     <Compile Include="Tokenization\Automata\NfaTests.cs" />
     <Compile Include="Tokenization\LatvianTokenizerTests.cs" />
@@ -45,7 +49,9 @@
     <Compile Include="Tokenization\ReadmeTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Latvian\Latvian.csproj">
