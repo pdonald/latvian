@@ -17,7 +17,6 @@ using System.Linq;
 
 namespace Latvian.Tokenization
 {
-    using Automata;
     using Tokens;
 
     using Sentence = IEnumerable<Token>;
@@ -65,9 +64,9 @@ namespace Latvian.Tokenization
         public bool IncludeWhitespace { get; set; }
         public bool IncludeControlChars { get; set; }
 
-        public new IEnumerable<Token> Tokenize(IEnumerable<char> text)
+        internal override IEnumerable<Token> Tokenize(Readers.CharReader reader)
         {
-            IEnumerable<Token> tokens = base.Tokenize(text);
+            IEnumerable<Token> tokens = base.Tokenize(reader);
 
             if (IncludeWhitespace && IncludeControlChars)
                 return tokens;
@@ -75,7 +74,7 @@ namespace Latvian.Tokenization
             if (!IncludeWhitespace)
                 return tokens.Where(t => !(t is WhitespaceToken));
             if (!IncludeControlChars)
-                return tokens.Where(t => !(t is ControlCharsToken));
+                return tokens.Where(t => !(t is ControlCharsToken) && !(t is ByteOrderMarkToken));
 
             return tokens;
         }

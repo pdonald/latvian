@@ -13,7 +13,9 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 
 using Latvian.Tokenization;
 
@@ -24,11 +26,19 @@ namespace Latvian.Tests.Tokenization
     [TestFixture]
     public class LatvianTokenizerTests
     {
-        ITokenizer tokenizer = new LatvianTokenizer { IncludeWhitespace = true };
+        LatvianTokenizer tokenizer = new LatvianTokenizer { IncludeWhitespace = true };
 
         private void Test(string text, params string[] expected)
         {    
-            string[] tokens = tokenizer.Tokenize(text).Select(t => t.Text).ToArray();
+            string[] tokens;
+            
+            tokens = tokenizer.Tokenize(text).Select(t => t.Text).ToArray();
+            CollectionAssert.AreEqual(expected, tokens);
+
+            tokens = tokenizer.Tokenize(new StringReader(text)).Select(t => t.Text).ToArray();
+            CollectionAssert.AreEqual(expected, tokens);
+
+            tokens = tokenizer.Tokenize(text as IEnumerable<char>).Select(t => t.Text).ToArray();
             CollectionAssert.AreEqual(expected, tokens);
         }
 

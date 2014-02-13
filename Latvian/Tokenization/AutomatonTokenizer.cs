@@ -19,14 +19,15 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
-namespace Latvian.Tokenization.Automata
+namespace Latvian.Tokenization
 {
+    using Automata;
+    using Readers;
     using Tokens;
 
-    using DFA = DeterministicFiniteAutomaton;
-    using NFA = NondeterministicFiniteAutomaton;
+    using DFA = Automata.DeterministicFiniteAutomaton;
+    using NFA = Automata.NondeterministicFiniteAutomaton;
 
     // todo: support string patterns
     public class AutomatonTokenizer : ITokenizer, IList<Type>
@@ -36,15 +37,7 @@ namespace Latvian.Tokenization.Automata
         private DFA dfa;
         private bool compiled = false;
 
-        static Func<Token> GetActivator(Type type)
-        {
-            ConstructorInfo ctor = type.GetConstructors().First();
-            NewExpression newExp = Expression.New(ctor);
-            LambdaExpression lambda = Expression.Lambda(typeof(Func<Token>), newExp);
-            Func<Token> compiled = (Func<Token>)lambda.Compile();
-            return compiled;
-        }
-
+        #region Load/Save
         public void Load(string filename)
         {
             patterns = new List<Type>();
@@ -88,7 +81,9 @@ namespace Latvian.Tokenization.Automata
 
             dfa.Save(writer.BaseStream);
         }
+        #endregion
 
+        #region Compile
         protected void BuildAutomaton()
         {
             if (compiled)
@@ -122,7 +117,39 @@ namespace Latvian.Tokenization.Automata
             compiled = true;
         }
 
+        private static Func<Token> GetActivator(Type type)
+        {
+            ConstructorInfo ctor = type.GetConstructors().First();
+            NewExpression newExp = Expression.New(ctor);
+            LambdaExpression lambda = Expression.Lambda(typeof(Func<Token>), newExp);
+            Func<Token> compiled = (Func<Token>)lambda.Compile();
+            return compiled;
+        }
+        #endregion
+
+        #region Tokenize
+        public IEnumerable<Token> Tokenize(string text)
+        {
+            using (CharReader reader = new StringCharReader(text))
+                foreach (Token token in Tokenize(reader))
+                    yield return token;
+        }
+
+        public IEnumerable<Token> Tokenize(TextReader textReader)
+        {
+            using (CharReader reader = new TextCharReader(textReader))
+                foreach (Token token in Tokenize(reader))
+                    yield return token;
+        }
+
         public IEnumerable<Token> Tokenize(IEnumerable<char> text)
+        {
+            using (CharReader reader = new EnumeratorCharReader(text))
+                foreach (Token token in Tokenize(reader))
+                    yield return token;
+        }
+
+        internal virtual IEnumerable<Token> Tokenize(CharReader reader)
         {
             BuildAutomaton();
 
@@ -130,9 +157,6 @@ namespace Latvian.Tokenization.Automata
                 yield break;
 
             DFA.State current = dfa.Start;
-
-            TextReader reader = text is string ? (TextReader)new StringReader(text as string) : (TextReader)new StreamingReader(text);
-            //TextReader reader = new StreamingReader(text);
 
             int start = 0;
             int end = -1;
@@ -211,6 +235,7 @@ namespace Latvian.Tokenization.Automata
                 throw new Exception("negative start");
             }
         }
+        #endregion
 
         #region IList<Type>
         public Type this[int index]
@@ -219,7 +244,7 @@ namespace Latvian.Tokenization.Automata
             set { patterns[index] = value; }
         }
 
-        public void Add<T>()
+        public void Add<T>() where T : Token, IHasPattern, new()
         {
             Add(typeof(T));
         }
@@ -230,7 +255,7 @@ namespace Latvian.Tokenization.Automata
             compiled = false;
         }
 
-        public void Insert<T>(int index)
+        public void Insert<T>(int index) where T : Token, IHasPattern, new()
         {
             Insert(index, typeof(T));
         }
@@ -241,7 +266,7 @@ namespace Latvian.Tokenization.Automata
             compiled = false;
         }
 
-        public void Move<T>(int index)
+        public void Move<T>(int index) where T : Token, IHasPattern, new()
         {
             Move(index, typeof(T));
         }
@@ -254,7 +279,7 @@ namespace Latvian.Tokenization.Automata
             Insert(index, patternType);
         }
 
-        public bool Remove<T>()
+        public bool Remove<T>() where T : Token, IHasPattern, new()
         {
             return Remove(typeof(T));
         }
@@ -284,7 +309,7 @@ namespace Latvian.Tokenization.Automata
             }
         }
 
-        public bool Contains<T>()
+        public bool Contains<T>() where T : Token, IHasPattern, new()
         {
             return Contains(typeof(T));
         }
@@ -294,7 +319,7 @@ namespace Latvian.Tokenization.Automata
             return patterns.Contains(patternType);
         }
 
-        public int IndexOf<T>()
+        public int IndexOf<T>() where T : Token, IHasPattern, new()
         {
             return IndexOf(typeof(T));
         }
@@ -327,239 +352,6 @@ namespace Latvian.Tokenization.Automata
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
-        }
-        #endregion
-
-        #region Readers
-        private abstract class TextReader : IDisposable
-        {
-            int start = 0;
-            int line = 0;
-            int linePos = 0;
-            int lineBeforeStart = 0;
-            int linePosBeforeStart = 0;
-
-            public int Line { get { return line; } }
-            public int LinePosition { get { return linePos; } }
-
-            public abstract int Position { get; }
-            public abstract bool IsEnd { get; }
-
-            public abstract char Read2();
-            
-            public virtual char Read()
-            {
-                char c = Read2();
-                linePos++;
-                if (c == '\n')
-                {
-                    line++;
-                    linePos = 0;
-                }
-                return c;
-            }
-
-            public virtual void MoveBack(int position)
-            {
-                line = lineBeforeStart;
-                linePos = linePosBeforeStart;
-
-                for (int i = start; i < position; i++)
-                {
-                    linePos++;
-                    if (At(i) == '\n')
-                    {
-                        line++;
-                        linePos = 0;
-                    }
-                }
-            }
-
-            public abstract char At(int position);
-            public abstract string Substring(int start, int end);
-            
-            public virtual void Reset()
-            {
-                start = 0;
-                line = 0;
-                linePos = 0;
-                lineBeforeStart = 0;
-                linePosBeforeStart = 0;
-            }
-            
-            public virtual void Release()
-            {
-                start = Position;
-                lineBeforeStart = line;
-                linePosBeforeStart = linePos;
-            }
-
-            public virtual void Dispose()
-            {
-            }
-        }
-
-        private class StreamingReader : TextReader
-        {
-            IEnumerator<char> source;
-            int sourcePosition = 0;
-            bool sourceEnd = false;
-            //int sourceReleasePosition = 0;
-            StringBuilder buffer = new StringBuilder();
-            int bufferPosition = 0;
-            int bufferStartsAtThisSourcePosition = 0;
-            int minReleaseBufferSize;
-
-            public StreamingReader(IEnumerable<char> source, int minReleaseBufferSize = 16 * 1024)
-            {
-                this.source = source.GetEnumerator();
-                this.minReleaseBufferSize = minReleaseBufferSize;
-            }
-
-            public override int Position
-            {
-                get { return bufferStartsAtThisSourcePosition + bufferPosition; }
-            }
-
-            public override bool IsEnd
-            {
-                get
-                {
-                    if (sourceEnd)
-                        return true;
-
-                    if (buffer.Length > 0 && bufferPosition < buffer.Length)
-                        return false;
-
-                    if (source.MoveNext())
-                    {
-                        buffer.Append(source.Current);
-                        sourcePosition++;
-                        return false;
-                    }
-
-                    sourceEnd = true;
-                    return true;
-                }
-            }
-
-            public override char Read2()
-            {
-                if ((buffer.Length > 0 && bufferPosition < buffer.Length) || !IsEnd)
-                {
-                    char c = buffer[bufferPosition];
-                    bufferPosition++;
-                    return c;
-                }
-
-                throw new EndOfStreamException();
-            }
-
-            public override void MoveBack(int position)
-            {
-                bufferPosition = position - bufferStartsAtThisSourcePosition;
-                base.MoveBack(position);
-            }
-
-            public override char At(int position)
-            {
-                return buffer[position - bufferStartsAtThisSourcePosition];
-            }
-
-            public override string Substring(int start, int end)
-            {
-                int bufferStart = start - bufferStartsAtThisSourcePosition;
-                int bufferEnd = end - bufferStartsAtThisSourcePosition;
-
-                return buffer.ToString(bufferStart, bufferEnd - bufferStart);
-            }
-
-            public override void Release()
-            {
-                base.Release();
-                //sourceReleasePosition = Position;
-                
-                if (bufferPosition >= minReleaseBufferSize)
-                {
-                    buffer.Remove(0, bufferPosition);
-                    bufferStartsAtThisSourcePosition += bufferPosition;
-                    bufferPosition = 0;
-                }
-            }
-
-            public override void Reset()
-            {
-                base.Reset();
-
-                source.Reset();
-                sourcePosition = 0;
-                sourceEnd = false;
-                buffer = new StringBuilder();
-                bufferPosition = 0;
-                bufferStartsAtThisSourcePosition = 0;
-            }
-
-            public override void Dispose()
-            {
-                base.Dispose();
-
-                source.Dispose();
-                source = null;
-                buffer = null;
-            }
-        }
-
-        private class StringReader : TextReader
-        {
-            string s;
-            int position;
-            int length;
-
-            public StringReader(string s)
-            {
-                this.s = s;
-                this.position = 0;
-                this.length = s.Length;
-            }
-
-            public override int Position
-            {
-                get { return position; }
-            }
-
-            public override bool IsEnd
-            {
-                get { return position >= length; }
-            }
-
-            public override char Read2()
-            {
-                char c = s[position];
-                position++;
-                return c;
-            }
-
-            public override char At(int position)
-            {
-                return s[position];
-            }
-
-            public override string Substring(int start, int end)
-            {
-                return s.Substring(start, end - start);
-            }
-
-            public override void MoveBack(int position)
-            {
-                this.position = position;
-                base.MoveBack(position);
-            }
-
-            public override void Reset()
-            {
-                position = 0;
-                base.Reset();
-            }
         }
         #endregion
     }
