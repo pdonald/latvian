@@ -107,9 +107,13 @@ namespace Latvian.Tokenization.Automata
                     continue;
 
                 IHasPattern token = (IHasPattern)activators[i]();
-                NFA n = new RegularExpression(token.Pattern).ToNfa();
-                n.Exit.Values = new[] { i };
-                nfa = NFA.Or(nfa, n);
+                string pattern = token.Pattern;
+                if (pattern != null)
+                {
+                    NFA n = new RegularExpression(pattern).ToNfa();
+                    n.Exit.Values = new[] { i };
+                    nfa = NFA.Or(nfa, n);
+                }
             }
 
             dfa = nfa.ToDfa();
