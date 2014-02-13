@@ -108,10 +108,19 @@ namespace Latvian.Tagging.Perceptron
             if (filename == null)
                 throw new ArgumentNullException("filename");
 
+            using (Stream stream = new FileStream(filename, FileMode.Open, FileAccess.Read))
+                Load(stream);
+        }
+
+        protected void Load(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException("stream");
+
             perceptron = new Perceptron();
 
-            using (Stream stream = new GZipStream(new FileStream(filename, FileMode.Open, FileAccess.Read), CompressionMode.Decompress))
-                perceptron.Load(stream);
+            using (Stream decompressed = new GZipStream(stream, CompressionMode.Decompress))
+                perceptron.Load(decompressed);
         }
         #endregion
 

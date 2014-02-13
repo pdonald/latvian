@@ -47,5 +47,11 @@ namespace Latvian.Tagging
             FeatureTemplates.Add(new PrevNoun());
             FeatureTemplates.Add(new PrevNoun2());
         }
+
+        public LatvianTagger(string filename)
+            : this()
+        {
+            Load(filename);
+        }
     }
 }
