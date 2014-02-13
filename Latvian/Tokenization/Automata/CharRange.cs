@@ -108,7 +108,7 @@ namespace Latvian.Tokenization.Automata
                 // c..z + a..z => a..b + c..z
                 char a = this.from < range.from ? this.from : range.from;
                 char b = this.from < range.from ? range.from : this.from;
-                return new[] { new CharRange(a, this.to), new CharRange(b, (char)(a + 1)) };
+                return new[] { new CharRange(a, (char)(b - 1)), new CharRange(b, this.to) };
             }
             else
             {
