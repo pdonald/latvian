@@ -19,73 +19,90 @@ using System.Text;
 
 namespace Latvian.Tokenization.Readers
 {
+    public class PositionCounter
+    {
+        public PositionCounter()
+        {
+        }
+
+        public PositionCounter(PositionCounter other)
+        {
+            Position = other.Position;
+            Line = other.Line;
+            LinePosition = other.LinePosition;
+        }
+
+        public int Position { get; private set; }
+        public int Line { get; private set; }
+        public int LinePosition { get; private set; }
+
+        public void Add(char c)
+        {
+            Position++;
+            LinePosition++;
+
+            if (c == '\n')
+            {
+                Line++;
+                LinePosition = 0;
+            }
+        }
+
+        public void Add(string s)
+        {
+            foreach (char c in s)
+            {
+                Add(c);
+            }
+        }
+    }
+
     abstract class CharReader : IDisposable
     {
-        int position = 0;
-        int start = 0;
-        int line = 0;
-        int linePos = 0;
-        int lineBeforeStart = 0;
-        int linePosBeforeStart = 0;
-
-        public int Position { get { return position; } }
-        public int Line { get { return line; } }
-        public int LinePosition { get { return linePos; } }
+        PositionCounter counter = new PositionCounter();
+        PositionCounter before = new PositionCounter();
+        
+        public int Position { get { return counter.Position; } }
+        public int Line { get { return counter.Line; } }
+        public int LinePosition { get { return counter.LinePosition; } }
         
         public abstract bool IsEnd { get; }
-        public abstract char ReadNext();
         public abstract char this[int position] { get; }
+        public abstract char Peek();
         public abstract string Substring(int start, int end);
 
         public virtual char Read()
         {
-            char c = ReadNext();
-            position++;
-            linePos++;
-            if (c == '\n')
-            {
-                line++;
-                linePos = 0;
-            }
+            char c = Peek();
+            counter.Add(c);
             return c;
         }
 
         public virtual void MoveBack(int position)
         {
-            this.position = position;
-            line = lineBeforeStart;
-            linePos = linePosBeforeStart;
+            counter = new PositionCounter(before);
 
-            for (int i = start; i < position; i++)
+            while (counter.Position < position)
             {
-                linePos++;
-                if (this[i] == '\n')
-                {
-                    line++;
-                    linePos = 0;
-                }
+                counter.Add(this[counter.Position]);
             }
         }
 
         public virtual void Release()
         {
-            start = position;
-            lineBeforeStart = line;
-            linePosBeforeStart = linePos;
+            before = new PositionCounter(counter);
         }
 
         public virtual void Reset()
         {
-            position = 0;
-            start = 0;
-            line = 0;
-            linePos = 0;
-            lineBeforeStart = 0;
-            linePosBeforeStart = 0;
+            counter = new PositionCounter();
+            before = new PositionCounter();
         }
 
         public virtual void Dispose()
         {
+            counter = null;
+            before = null;
         }
     }
 
@@ -108,7 +125,7 @@ namespace Latvian.Tokenization.Readers
             get { return s[position]; }
         }
 
-        public override char ReadNext()
+        public override char Peek()
         {
             return s[Position];
         }
@@ -127,11 +144,12 @@ namespace Latvian.Tokenization.Readers
 
     abstract class BufferingCharReader : CharReader
     {
-        private const int MinReleaseBufferSize = 16 * 1024;
+        const int MinReleaseBufferSize = 16 * 1024;
 
         int sourcePosition = 0;
         bool sourceEnd = false;
         int sourceReleasePosition = 0;
+
         StringBuilder buffer = new StringBuilder();
         int bufferPosition = 0;
         int bufferStartsAtThisSourcePosition = 0;
@@ -161,16 +179,21 @@ namespace Latvian.Tokenization.Readers
             }
         }
 
-        public override char ReadNext()
+        public override char Peek()
         {
             if ((buffer.Length > 0 && bufferPosition < buffer.Length) || !IsEnd)
             {
-                char c = buffer[bufferPosition];
-                bufferPosition++;
-                return c;
+                return buffer[bufferPosition];
             }
 
             throw new EndOfStreamException();
+        }
+
+        public override char Read()
+        {
+            char c = base.Read();
+            bufferPosition++;
+            return c;
         }
 
         public override char this[int position]
@@ -276,16 +299,16 @@ namespace Latvian.Tokenization.Readers
             return null;
         }
 
+        public override void Reset()
+        {
+            throw new NotSupportedException();
+        }
+
         public override void Dispose()
         {
             textReader.Dispose();
             textReader = null;
             base.Dispose();
-        }
-
-        public override void Reset()
-        {
-            throw new NotSupportedException();
         }
     }
 }
