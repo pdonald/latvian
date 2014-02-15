@@ -16,7 +16,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Latvian.Tests")]
-[assembly: AssemblyDescription("Latvian NLP Library Tests")]
+[assembly: AssemblyDescription("Latvian natural language processing library tests")]
 [assembly: AssemblyCompany("Pēteris Ņikiforovs")]
 [assembly: AssemblyProduct("Latvian")]
 [assembly: AssemblyCopyright("Copyright © Pēteris Ņikiforovs 2014")]

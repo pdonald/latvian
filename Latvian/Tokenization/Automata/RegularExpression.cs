@@ -154,6 +154,7 @@ namespace Latvian.Tokenization.Automata
         }
 
         // todo: support inverted ranges
+        // todo: support escaped ]
         private class RangeExpression : Expression
         {
             public RangeExpression(TextReader reader)

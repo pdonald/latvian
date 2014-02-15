@@ -29,18 +29,17 @@ namespace Latvian.Tokenization
     using DFA = Automata.DeterministicFiniteAutomaton;
     using NFA = Automata.NondeterministicFiniteAutomaton;
 
-    // todo: support string patterns
     public class AutomatonTokenizer : ITokenizer, IList<Type>
     {
-        private List<Type> patterns = new List<Type>();
-        private Dictionary<int, Func<Token>> activators = new Dictionary<int, Func<Token>>();
+        private List<Type> tokenTypes = new List<Type>();
+        private Dictionary<int, Func<Token>> tokenCreators = new Dictionary<int, Func<Token>>();
         private DFA dfa;
         private bool compiled = false;
 
         #region Load/Save
         public void Load(string filename)
         {
-            patterns = new List<Type>();
+            tokenTypes = new List<Type>();
 
             //using (Stream stream = new GZipStream(new FileStream(filename, FileMode.Open, FileAccess.Read), CompressionMode.Decompress))
             using (Stream stream = new FileStream(filename, FileMode.Open, FileAccess.Read))
@@ -50,7 +49,7 @@ namespace Latvian.Tokenization
 
         public void Save(string filename)
         {
-            BuildAutomaton();
+            Compile();
 
             //using (Stream stream = new GZipStream(new FileStream(filename, FileMode.Create, FileAccess.Write), CompressionLevel.Optimal))
             using (Stream stream = new FileStream(filename, FileMode.Create, FileAccess.Write))
@@ -75,8 +74,9 @@ namespace Latvian.Tokenization
 
         protected virtual void Save(BinaryWriter writer)
         {
-            writer.Write(patterns.Count);
-            foreach (Type type in patterns)
+            writer.Write(tokenTypes.Count);
+
+            foreach (Type type in tokenTypes)
                 writer.Write(type.FullName);
 
             dfa.Save(writer.BaseStream);
@@ -84,30 +84,31 @@ namespace Latvian.Tokenization
         #endregion
 
         #region Compile
-        protected void BuildAutomaton()
+        public void Compile()
         {
             if (compiled)
                 return;
 
-            activators = new Dictionary<int, Func<Token>>();
-            for (int i = 0; i < patterns.Count; i++)
-                if (patterns[i] != null)
-                    activators[i] = GetActivator(patterns[i]);
+            tokenCreators = new Dictionary<int, Func<Token>>();
+            for (int i = 0; i < tokenTypes.Count; i++)
+                if (tokenTypes[i] != null)
+                    tokenCreators[i] = CreatorActivator(tokenTypes[i]);
             
             NFA nfa = NFA.Empty();
 
-            for (int i = 0; i < patterns.Count; i++)
+            for (int i = 0; i < tokenTypes.Count; i++)
             {
-                if (patterns[i] == null)
+                if (tokenTypes[i] == null)
                     continue;
 
-                IHasPattern token = (IHasPattern)activators[i]();
+                IHasPattern token = (IHasPattern)tokenCreators[i]();
                 string pattern = token.Pattern;
                 if (pattern != null)
                 {
-                    NFA n = new RegularExpression(pattern).ToNfa();
-                    n.Exit.Values = new[] { i };
-                    nfa = NFA.Or(nfa, n);
+                    RegularExpression regex = new RegularExpression(pattern);
+                    NFA automaton = regex.ToNfa();
+                    automaton.Exit.Values = new[] { i };
+                    nfa = NFA.Or(nfa, automaton);
                 }
             }
 
@@ -117,11 +118,11 @@ namespace Latvian.Tokenization
             compiled = true;
         }
 
-        private static Func<Token> GetActivator(Type type)
+        private static Func<Token> CreatorActivator(Type type)
         {
-            ConstructorInfo ctor = type.GetConstructors().First();
-            NewExpression newExp = Expression.New(ctor);
-            LambdaExpression lambda = Expression.Lambda(typeof(Func<Token>), newExp);
+            ConstructorInfo constructor = type.GetConstructors().First();
+            NewExpression newExpression = Expression.New(constructor);
+            LambdaExpression lambda = Expression.Lambda(typeof(Func<Token>), newExpression);
             Func<Token> compiled = (Func<Token>)lambda.Compile();
             return compiled;
         }
@@ -137,7 +138,7 @@ namespace Latvian.Tokenization
 
         public IEnumerable<Token> Tokenize(TextReader textReader)
         {
-            using (CharReader reader = new TextCharReader(textReader))
+            using (CharReader reader = new TextReaderCharReader(textReader))
                 foreach (Token token in Tokenize(reader))
                     yield return token;
         }
@@ -151,97 +152,82 @@ namespace Latvian.Tokenization
 
         internal virtual IEnumerable<Token> Tokenize(CharReader reader)
         {
-            BuildAutomaton();
+            Compile();
 
             if (dfa.Start == null)
                 yield break;
 
+            PositionCounter start = new PositionCounter();
+            PositionCounter end = null;
+            int[] tokenTypeIDs = null;
+
             DFA.State current = dfa.Start;
-
-            int start = 0;
-            int end = -1;
-            int lineStart = 0;
-            int lineEnd = -1;
-            int linePosStart = 0;
-            int linePosEnd = -1;
-            int[] values = null;
-
-            Func<Token> createToken = () =>
-            {
-                Token token = values != null && values.Length > 0 ? activators[values[0]]() : new Token();
-                token.Line = lineStart;
-                token.LineEnd = lineEnd;
-                token.LinePosition = linePosStart;
-                token.LinePositionEnd = linePosEnd;
-                token.Position = start;
-                token.PositionEnd = end;
-                token.Text = reader.Substring(start, end);
-                return token;
-            };
 
             while (!reader.IsEnd)
             {
                 char c = reader.Read();
                 current = current[c];
-                
+
+                // reached the end, nowhere else to go
+                // return the match until the prev final state
+                // and go back to the next char right after the prev final state
                 if (current == null)
                 {
-                    // reached the end
-                    // return the match until prev final state
-
-                    //if (end == -1) throw new Exception("negative end");
-
-                    yield return createToken();
-
-                    // go back to the next char right after the prev final state
-                    reader.MoveBack(end); // continue will move +1
+                    yield return CreateToken(reader, start, end, tokenTypeIDs);
+                    
+                    reader.MoveBack(end.Position);
                     reader.Release();
                     
-                    start = reader.Position;
-                    lineStart = reader.Line;
-                    linePosStart = reader.LinePosition;
-                    end = -1;
-                    lineEnd = -1;
-                    linePosEnd = -1;
-                    values = null;
-                    current = dfa.Start;
+                    start = reader.PositionCounter;
+                    end = null;
+                    tokenTypeIDs = null;
 
+                    current = dfa.Start;
                     continue;
                 }
 
+                // remember this position in case we need to come back
                 if (current.IsFinal)
                 {
-                    end = reader.Position;
-                    lineEnd = reader.Line;
-                    linePosEnd = reader.LinePosition;
-                    values = current.Values;
+                    end = reader.PositionCounter;
+                    tokenTypeIDs = current.Values;
                 }
             }
 
-            if (end != -1)
+            if (end != null)
             {
-                yield return createToken();
+                yield return CreateToken(reader, start, end, tokenTypeIDs);
                 
-                if (end != reader.Position)
+                if (end.Position != reader.Position)
                 {
-                    start = end;
-                    end = reader.Position;
-                    // todo: line
-                    yield return createToken();
+                    yield return CreateToken(reader, end, reader.PositionCounter, null);
                 }
             }
-            else if (start != -1)
+            else
             {
-                throw new Exception("negative start");
+                yield return CreateToken(reader, start, reader.PositionCounter, tokenTypeIDs);
             }
+        }
+
+        private Token CreateToken(CharReader reader, PositionCounter start, PositionCounter end, int[] tokenTypeIDs)
+        {
+            Token token = tokenTypeIDs != null && tokenTypeIDs.Length > 0 ? tokenCreators[tokenTypeIDs[0]]() : new Token();
+            token.Position = start.Position;
+            token.PositionEnd = end.Position;
+            token.Line = start.Line;
+            token.LineEnd = end.Line;
+            token.LinePosition = start.LinePosition;
+            token.LinePositionEnd = end.LinePosition;
+            token.Text = reader.Substring(start.Position, end.Position);
+            return token;
         }
         #endregion
 
         #region IList<Type>
         public Type this[int index]
         {
-            get { return patterns[index]; }
-            set { patterns[index] = value; }
+            get { return tokenTypes[index]; }
+            set { tokenTypes[index] = value; }
         }
 
         public void Add<T>() where T : Token, IHasPattern, new()
@@ -251,7 +237,7 @@ namespace Latvian.Tokenization
 
         public void Add(Type patternType)
         {
-            patterns.Add(patternType);
+            tokenTypes.Add(patternType);
             compiled = false;
         }
 
@@ -262,7 +248,7 @@ namespace Latvian.Tokenization
 
         public void Insert(int index, Type patternType)
         {
-            patterns.Insert(index, patternType);
+            tokenTypes.Insert(index, patternType);
             compiled = false;
         }
 
@@ -286,7 +272,7 @@ namespace Latvian.Tokenization
 
         public bool Remove(Type patternType)
         {
-            if (patterns.Remove(patternType))
+            if (tokenTypes.Remove(patternType))
             {
                 compiled = false;
                 return true;
@@ -297,14 +283,15 @@ namespace Latvian.Tokenization
 
         public void RemoveAt(int index)
         {
-            patterns.RemoveAt(index);
+            tokenTypes.RemoveAt(index);
+            compiled = false;
         }
 
         public void Clear()
         {
-            if (patterns.Count > 0)
+            if (tokenTypes.Count > 0)
             {
-                patterns.Clear();
+                tokenTypes.Clear();
                 compiled = false;
             }
         }
@@ -316,7 +303,7 @@ namespace Latvian.Tokenization
 
         public bool Contains(Type patternType)
         {
-            return patterns.Contains(patternType);
+            return tokenTypes.Contains(patternType);
         }
 
         public int IndexOf<T>() where T : Token, IHasPattern, new()
@@ -326,17 +313,17 @@ namespace Latvian.Tokenization
 
         public int IndexOf(Type patternType)
         {
-            return patterns.IndexOf(patternType);
+            return tokenTypes.IndexOf(patternType);
         }
 
         public void CopyTo(Type[] array, int arrayIndex)
         {
-            patterns.CopyTo(array, arrayIndex);
+            tokenTypes.CopyTo(array, arrayIndex);
         }
 
         public int Count
         {
-            get { return patterns.Count; }
+            get { return tokenTypes.Count; }
         }
 
         public bool IsReadOnly
@@ -346,7 +333,7 @@ namespace Latvian.Tokenization
 
         public IEnumerator<Type> GetEnumerator()
         {
-            return patterns.GetEnumerator();
+            return tokenTypes.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

@@ -17,7 +17,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Latvian")]
-[assembly: AssemblyDescription("Latvian NLP Library")]
+[assembly: AssemblyDescription("Latvian natural language processing library")]
 [assembly: AssemblyCompany("Pēteris Ņikiforovs")]
 [assembly: AssemblyProduct("Latvian")]
 [assembly: AssemblyCopyright("Copyright © Pēteris Ņikiforovs 2014")]

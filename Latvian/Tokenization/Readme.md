@@ -1,5 +1,9 @@
 ﻿# Tokenizer
 
+Tokenization is the process of breaking a stream of text up into words, phrases, symbols, or other meaningful elements called tokens.
+
+This library provides a fast, streaming, customizable, regular expression based tokenizer using a Deterministic Finite Automaton (DFA).
+
 ## Quick Start
 
 Create a new instance of `Latvian.Tokenization.LatvianTokenizer` and call the `Tokenize` method with the text to tokenize as a string parameter.
@@ -180,7 +184,7 @@ public class MyTokenizer : LatvianTokenizer
 MyTokenizer tokenizer = new MyTokenizer();
 ```
 
-Patterns use a custom regular expression language (see further below for a short tutorial). The simplest way is to create a new class. It must extend `Token` and implement `IHasPattern`.
+Patterns use a custom regular expression language (see further below for a short tutorial). The simplest way is to create a new class. It must extend `Token` and implement `IHasPattern`. It also must have a parameterless constructor.
 
 ```csharp
 public class EmotionToken : Token, IHasPattern
@@ -243,40 +247,6 @@ token = tokenizer.Tokenize("00:00:00").First();
 Assert.IsTrue(token is ClockToken);
 ```
 
-### Default token types
-
-Here is the list of default token types along with the regular expression patterns used.
-
-* WordToken: `[a-zA-ZĀ-ž]+`
-* WhitespaceToken: `[ \t\r\n]+`
-* ... _todo_ ...
-
-_If this list is out of date, see LatvianTokenizer.cs_
-
-### Regular expression language
-
-* `[x]` matches a single character: `[a]` matches only `a`
-* `[xX]` matches one of the characters: `[aA]` matches only `a` or `A` but not both
-* `[x-x]` matches characters in the range (inclusive): `[0-9]` matches a single digit
-* `*` matches zero or more occurences of the expression: `[0-9]*`
-* `+` matches one or more occurrences of the expression: `[0-9]+`
-* `.` concatinates expressions: `[0-9].[a-z]` matches a digit followed by a letter
-* `|` matches one or the other expression: `[0-9]|[a-z]` matches a digit or a letter but not both
-* Evaulated left to right, equal priority: `[0].[1]|[2]` is `[0].([1]|[2])` and matches `01` or `02`
-* `()` changes order: `([0].[1])|[2]` matches `01` or `2`
-
-All characters must be in square brackets, there are no implicit ranges. There is no implicit concatenation. There is no repetition apart from `*` and `+`.
-
-Examples:
-
-* Multi ranges: `[a-z0-9!@#]`
-* No need to escape the dash: `[-02]` or `[02-]` but `[0\-2]` (all match `0` or `-` or `2`)
-* Unicode chars: `[\u0000-\uffff]` matches any character
-* Two or more: `[a].[a]+` or `[a].[a].[a]*`
-
-
-## Performance
-
 ### Loading
 
 All patterns are parsed, then converted into a non-deterministic finite automaton (NFA) that is then converted to a deterministic finite automaton (DFA). This is referred to as compiling. This takes a while but it may not be significant depending on usage.
@@ -303,14 +273,49 @@ tokenizer5.Load("tokenizer.bin", compile: false);
 tokenizer5.Compile();
 ```
 
+### Default token types
+
+Here is the list of default token types along with the regular expression patterns used.
+
+* WordToken: `[a-zA-ZĀ-ž]+`
+* WhitespaceToken: `[ \t\r\n]+`
+* ... _todo_ ...
+
+_If this list is out of date, see [LatvianTokenizer.cs](LatvianTokenizer.cs)_
+
+### Regular expression language
+
+* `[x]` matches a single character: `[a]` matches only `a`
+* `[xX]` matches one of the characters: `[aA]` matches only `a` or `A` but not both
+* `[x-x]` matches characters in the range (inclusive): `[0-9]` matches a single digit
+* `*` matches zero or more occurences of the expression: `[0-9]*`
+* `+` matches one or more occurrences of the expression: `[0-9]+`
+* `.` concatinates expressions: `[0-9].[a-z]` matches a digit followed by a letter
+* `|` matches one or the other expression: `[0-9]|[a-z]` matches a digit or a letter but not both
+* Evaulated left to right, equal priority: `[0].[1]|[2]` is `[0].([1]|[2])` and matches `01` or `02`
+* `()` changes order: `([0].[1])|[2]` matches `01` or `2`
+
+All characters must be in square brackets, there are no implicit ranges. There is no implicit concatenation. There is no repetition apart from `*` and `+`.
+
+Examples:
+
+* Multi ranges: `[a-z0-9!@#]`
+* No need to escape the dash: `[-02]` or `[02-]` but `[0\-2]` (all match `0` or `-` or `2`)
+* Unicode chars: `[\u0000-\uffff]` matches any character
+* Two or more: `[a].[a]+` or `[a].[a].[a]*`
+
+## Performance
+
+### Loading
+
 Here are the benchmark results:
 
 | Method                            | Time     |
 | ----------------------------------|--------: |
-| Compile                           |    25 ms |
-| Load                              |    26 ms |
-| Compile x100                      |  2543 ms |
-| Load x100                         |  2689 ms |
+| Compile                           |    33 ms |
+| Load                              |    37 ms |
+| Compile x100                      |  3300 ms |
+| Load x100                         |  3770 ms |
 
 _Release build, NUnit test runner, mobile i7, SSD_
 
@@ -322,8 +327,9 @@ The tokenizer data file could be compressed but the space savings are insifignan
 
 | Source               | Size       | Time     |  Rate      | Speed              |
 | ---------------------|-----------:|--------: |-----------:|-------------------:|
-| string               |     10 MiB |   740 ms | 13.5 MiB/s | 2 279 983 tokens/s |
-| file (StreamReader)  |     10 MiB |  1022 ms |  9.8 MiB/s | 1 652 179 tokens/s |
+| string               |     10 MiB |   921 ms | 10.9 MiB/s | 1 842 425 tokens/s |
+| file (StreamReader)  |     10 MiB |  1222 ms |  8.2 MiB/s | 1 388 168 tokens/s |
 
 _Release build, NUnit test runner, mobile i7, SSD_
 
+It's possible to further optimize tokenization by inlining `CharReader` and `PositionCounter` but that would require sacrificing code readability.

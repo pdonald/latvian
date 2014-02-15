@@ -294,7 +294,7 @@ namespace Latvian.Tokenization.Automata
             }
         }
 
-        #region Load / Save
+        #region Load/Save
         public void Load(Stream stream)
         {
             Dictionary<int, State> states = new Dictionary<int, State>();

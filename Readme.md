@@ -115,6 +115,7 @@ A configured tagger that produces good results for the Latvian language is inclu
 * **Fast training** - 10-fold cross validation can be performed in less than 25 seconds, no kidding!
 * **Parallel tagging**
 * **Streaming** - *todo*
+* **Small model** - 1.71 MiB model trained on 94k tokens
 
 ### Perceptron tagger
 

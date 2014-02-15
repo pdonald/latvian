@@ -18,14 +18,12 @@ using System.Linq;
 namespace Latvian.Tokenization
 {
     using Tokens;
-
     using Sentence = IEnumerable<Token>;
 
     public class LatvianTokenizer : AutomatonTokenizer, ITokenizer, ISentenceTokenizer, ISentenceBreaker
     {
         public LatvianTokenizer(bool compile = true)
         {
-            // todo: exceptions e.g. utt. kaut vai
             Add<WordToken>();
             Add<WhitespaceToken>();
             Add<PunctuationToken>();
@@ -101,11 +99,6 @@ namespace Latvian.Tokenization
 
             if (sentence.Count > 0)
                 yield return sentence.ToArray();
-        }
-
-        public void Compile()
-        {
-            BuildAutomaton();
         }
 
         #region Load/Save

@@ -61,7 +61,8 @@ namespace Latvian.Tokenization.Readers
     {
         PositionCounter counter = new PositionCounter();
         PositionCounter before = new PositionCounter();
-        
+
+        public PositionCounter PositionCounter { get { return new PositionCounter(counter); } }
         public int Position { get { return counter.Position; } }
         public int Line { get { return counter.Line; } }
         public int LinePosition { get { return counter.LinePosition; } }
@@ -280,11 +281,11 @@ namespace Latvian.Tokenization.Readers
         }
     }
 
-    class TextCharReader : BufferingCharReader
+    class TextReaderCharReader : BufferingCharReader
     {
         TextReader textReader;
 
-        public TextCharReader(TextReader textReader)
+        public TextReaderCharReader(TextReader textReader)
         {
             this.textReader = textReader;
         }
