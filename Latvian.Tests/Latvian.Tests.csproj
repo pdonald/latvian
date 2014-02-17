@@ -44,7 +44,6 @@
   <ItemGroup>
     <Compile Include="Tokenization\Automata\DfaTests.cs" />
     <Compile Include="Tokenization\Automata\NfaTests.cs" />
-    <Compile Include="Tokenization\PositionCounterTests.cs" />
     <Compile Include="Tokenization\LatvianTokenizerTests.cs" />
     <Compile Include="Tokenization\PerformanceTests.cs" />
     <Compile Include="Tokenization\ReadmeTests.cs" />

@@ -19,54 +19,16 @@ using System.Text;
 
 namespace Latvian.Tokenization.Readers
 {
-    public class PositionCounter
-    {
-        public PositionCounter()
-        {
-        }
-
-        public PositionCounter(PositionCounter other)
-        {
-            Position = other.Position;
-            Line = other.Line;
-            LinePosition = other.LinePosition;
-        }
-
-        public int Position { get; private set; }
-        public int Line { get; private set; }
-        public int LinePosition { get; private set; }
-
-        public void Add(char c)
-        {
-            Position++;
-            LinePosition++;
-
-            if (c == '\n')
-            {
-                Line++;
-                LinePosition = 0;
-            }
-        }
-
-        public void Add(string s)
-        {
-            foreach (char c in s)
-            {
-                Add(c);
-            }
-        }
-    }
-
     abstract class CharReader : IDisposable
     {
-        PositionCounter counter = new PositionCounter();
-        PositionCounter before = new PositionCounter();
+        public int Position;
+        public int Line;
+        public int LinePosition;
+            
+        int prevPosition;
+        int prevLine;
+        int prevLinePosition;
 
-        public PositionCounter PositionCounter { get { return new PositionCounter(counter); } }
-        public int Position { get { return counter.Position; } }
-        public int Line { get { return counter.Line; } }
-        public int LinePosition { get { return counter.LinePosition; } }
-        
         public abstract bool IsEnd { get; }
         public abstract char this[int position] { get; }
         public abstract char Peek();
@@ -75,35 +37,59 @@ namespace Latvian.Tokenization.Readers
         public virtual char Read()
         {
             char c = Peek();
-            counter.Add(c);
+
+            Position++;
+            LinePosition++;
+
+            if (c == '\n')
+            {
+                Line++;
+                LinePosition = 0;
+            }
+
             return c;
         }
 
         public virtual void MoveBack(int position)
         {
-            counter = new PositionCounter(before);
+            Position = prevPosition;
+            Line = prevLine;
+            LinePosition = prevLinePosition;
 
-            while (counter.Position < position)
+            for (int i = Position; i < position; i++)
             {
-                counter.Add(this[counter.Position]);
+                char c = this[i];
+
+                Position++;
+                LinePosition++;
+
+                if (c == '\n')
+                {
+                    Line++;
+                    LinePosition = 0;
+                }
             }
         }
 
         public virtual void Release()
         {
-            before = new PositionCounter(counter);
+            prevPosition = Position;
+            prevLine = Line;
+            prevLinePosition = LinePosition;
         }
 
         public virtual void Reset()
         {
-            counter = new PositionCounter();
-            before = new PositionCounter();
+            Position = 0;
+            Line = 0;
+            LinePosition = 0;
+            prevPosition = 0;
+            prevLine = 0;
+            prevLinePosition = 0;
         }
 
         public virtual void Dispose()
         {
-            counter = null;
-            before = null;
         }
     }
 
@@ -154,7 +140,7 @@ namespace Latvian.Tokenization.Readers
         StringBuilder buffer = new StringBuilder();
         int bufferPosition = 0;
         int bufferStartsAtThisSourcePosition = 0;
-        
+
         protected abstract char? ReadNextFromSource();
 
         public override bool IsEnd
@@ -293,10 +279,10 @@ namespace Latvian.Tokenization.Readers
         protected override char? ReadNextFromSource()
         {
             int c = textReader.Read();
-            
+
             if (c != -1)
                 return (char)c;
-            
+
             return null;
         }
 

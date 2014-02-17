@@ -92,7 +92,7 @@ namespace Latvian.Tokenization
             tokenCreators = new Dictionary<int, Func<Token>>();
             for (int i = 0; i < tokenTypes.Count; i++)
                 if (tokenTypes[i] != null)
-                    tokenCreators[i] = CreatorActivator(tokenTypes[i]);
+                    tokenCreators[i] = CreateActivator(tokenTypes[i]);
             
             NFA nfa = NFA.Empty();
 
@@ -118,7 +118,7 @@ namespace Latvian.Tokenization
             compiled = true;
         }
 
-        private static Func<Token> CreatorActivator(Type type)
+        private static Func<Token> CreateActivator(Type type)
         {
             ConstructorInfo constructor = type.GetConstructors().First();
             NewExpression newExpression = Expression.New(constructor);
@@ -131,23 +131,17 @@ namespace Latvian.Tokenization
         #region Tokenize
         public IEnumerable<Token> Tokenize(string text)
         {
-            using (CharReader reader = new StringCharReader(text))
-                foreach (Token token in Tokenize(reader))
-                    yield return token;
+            return Tokenize(new StringCharReader(text));
         }
 
         public IEnumerable<Token> Tokenize(TextReader textReader)
         {
-            using (CharReader reader = new TextReaderCharReader(textReader))
-                foreach (Token token in Tokenize(reader))
-                    yield return token;
+            return Tokenize(new TextReaderCharReader(textReader));
         }
 
         public IEnumerable<Token> Tokenize(IEnumerable<char> text)
         {
-            using (CharReader reader = new EnumeratorCharReader(text))
-                foreach (Token token in Tokenize(reader))
-                    yield return token;
+            return Tokenize(new EnumeratorCharReader(text));
         }
 
         internal virtual IEnumerable<Token> Tokenize(CharReader reader)
@@ -157,15 +151,24 @@ namespace Latvian.Tokenization
             if (dfa.Start == null)
                 yield break;
 
-            PositionCounter start = new PositionCounter();
-            PositionCounter end = null;
+            int startPosition = 0;
+            int startLine = 0;
+            int startLinePosition = 0;
+            int endPosition = -1;
+            int endLine = -1;
+            int endLinePosition = -1;
             int[] tokenTypeIDs = null;
+
+            Func<char> readerRead = reader.Read;
+            Action<int> readerMoveBack = reader.MoveBack;
+            Action readerRelease = reader.Release;
+            Func<int, int, string> readerSubstring = reader.Substring;
 
             DFA.State current = dfa.Start;
 
             while (!reader.IsEnd)
             {
-                char c = reader.Read();
+                char c = readerRead();
                 current = current[c];
 
                 // reached the end, nowhere else to go
@@ -173,53 +176,77 @@ namespace Latvian.Tokenization
                 // and go back to the next char right after the prev final state
                 if (current == null)
                 {
-                    yield return CreateToken(reader, start, end, tokenTypeIDs);
-                    
-                    reader.MoveBack(end.Position);
-                    reader.Release();
-                    
-                    start = reader.PositionCounter;
-                    end = null;
+                    Token token = tokenTypeIDs != null && tokenTypeIDs.Length > 0 ? tokenCreators[tokenTypeIDs[0]]() : new Token();
+                    token.Position = startPosition;
+                    token.PositionEnd = endPosition;
+                    token.Line = startLine;
+                    token.LineEnd = endLine;
+                    token.LinePosition = startLinePosition;
+                    token.LinePositionEnd = endLinePosition;
+                    token.Text = readerSubstring(startPosition, endPosition);
+                    yield return token;
+
+                    readerMoveBack(endPosition);
+                    readerRelease();
+
+                    startPosition = reader.Position;
+                    startLine = reader.Line;
+                    startLinePosition = reader.LinePosition;
+                    endPosition = -1;
+                    endLine = -1;
+                    endLinePosition = -1;
                     tokenTypeIDs = null;
 
                     current = dfa.Start;
                     continue;
                 }
 
-                // remember this position in case we need to come back
                 if (current.IsFinal)
                 {
-                    end = reader.PositionCounter;
+                    endPosition = reader.Position;
+                    endLine = reader.Line;
+                    endLinePosition = reader.LinePosition;
                     tokenTypeIDs = current.Values;
                 }
             }
 
-            if (end != null)
+            if (endPosition != -1)
             {
-                yield return CreateToken(reader, start, end, tokenTypeIDs);
-                
-                if (end.Position != reader.Position)
+                Token token = tokenTypeIDs != null && tokenTypeIDs.Length > 0 ? tokenCreators[tokenTypeIDs[0]]() : new Token();
+                token.Position = startPosition;
+                token.PositionEnd = endPosition;
+                token.Line = startLine;
+                token.LineEnd = endLine;
+                token.LinePosition = startLinePosition;
+                token.LinePositionEnd = endLinePosition;
+                token.Text = reader.Substring(startPosition, endPosition);
+                yield return token;
+
+                if (endPosition != reader.Position)
                 {
-                    yield return CreateToken(reader, end, reader.PositionCounter, null);
+                    token = new Token();
+                    token.Position = endPosition;
+                    token.PositionEnd = reader.Position;
+                    token.Line = endLine;
+                    token.LineEnd = reader.Line;
+                    token.LinePosition = endLinePosition;
+                    token.LinePositionEnd = reader.LinePosition;
+                    token.Text = readerSubstring(endPosition, reader.Position);
+                    yield return token;
                 }
             }
             else
             {
-                yield return CreateToken(reader, start, reader.PositionCounter, tokenTypeIDs);
+                Token token = tokenTypeIDs != null && tokenTypeIDs.Length > 0 ? tokenCreators[tokenTypeIDs[0]]() : new Token();
+                token.Position = startPosition;
+                token.PositionEnd = reader.Position;
+                token.Line = startLine;
+                token.LineEnd = reader.Line;
+                token.LinePosition = startLinePosition;
+                token.LinePositionEnd = reader.LinePosition;
+                token.Text = readerSubstring(startPosition, reader.Position);
+                yield return token;
             }
-        }
-
-        private Token CreateToken(CharReader reader, PositionCounter start, PositionCounter end, int[] tokenTypeIDs)
-        {
-            Token token = tokenTypeIDs != null && tokenTypeIDs.Length > 0 ? tokenCreators[tokenTypeIDs[0]]() : new Token();
-            token.Position = start.Position;
-            token.PositionEnd = end.Position;
-            token.Line = start.Line;
-            token.LineEnd = end.Line;
-            token.LinePosition = start.LinePosition;
-            token.LinePositionEnd = end.LinePosition;
-            token.Text = reader.Substring(start.Position, end.Position);
-            return token;
         }
         #endregion
 
