@@ -312,10 +312,10 @@ Here are the benchmark results:
 
 | Method                            | Time     |
 | ----------------------------------|--------: |
-| Compile                           |    33 ms |
-| Load                              |    37 ms |
-| Compile x100                      |  3300 ms |
-| Load x100                         |  3770 ms |
+| Compile                           |    34 ms |
+| Load                              |    36 ms |
+| Compile x100                      |  3443 ms |
+| Load x100                         |  3619 ms |
 
 _Release build, NUnit test runner, mobile i7, SSD_
 
@@ -327,9 +327,7 @@ The tokenizer data file could be compressed but the space savings are insifignan
 
 | Source               | Size       | Time     |  Rate      | Speed              |
 | ---------------------|-----------:|--------: |-----------:|-------------------:|
-| string               |     10 MiB |   921 ms | 10.9 MiB/s | 1 842 425 tokens/s |
-| file (StreamReader)  |     10 MiB |  1222 ms |  8.2 MiB/s | 1 388 168 tokens/s |
+| string               |     10 MiB |   747 ms | 13.4 MiB/s | 2 271 588 tokens/s |
+| file (StreamReader)  |     10 MiB |  1049 ms |  9.5 MiB/s | 1 617 420 tokens/s |
 
 _Release build, NUnit test runner, mobile i7, SSD_
-
-It's possible to further optimize tokenization by inlining `CharReader` and `PositionCounter` but that would require sacrificing code readability.

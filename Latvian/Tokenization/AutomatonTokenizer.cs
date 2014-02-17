@@ -159,16 +159,11 @@ namespace Latvian.Tokenization
             int endLinePosition = -1;
             int[] tokenTypeIDs = null;
 
-            Func<char> readerRead = reader.Read;
-            Action<int> readerMoveBack = reader.MoveBack;
-            Action readerRelease = reader.Release;
-            Func<int, int, string> readerSubstring = reader.Substring;
-
             DFA.State current = dfa.Start;
 
             while (!reader.IsEnd)
             {
-                char c = readerRead();
+                char c = reader.Read();
                 current = current[c];
 
                 // reached the end, nowhere else to go
@@ -183,11 +178,11 @@ namespace Latvian.Tokenization
                     token.LineEnd = endLine;
                     token.LinePosition = startLinePosition;
                     token.LinePositionEnd = endLinePosition;
-                    token.Text = readerSubstring(startPosition, endPosition);
+                    token.Text = reader.Substring(startPosition, endPosition);
                     yield return token;
 
-                    readerMoveBack(endPosition);
-                    readerRelease();
+                    reader.MoveBack(endPosition);
+                    reader.Release();
 
                     startPosition = reader.Position;
                     startLine = reader.Line;
@@ -231,7 +226,7 @@ namespace Latvian.Tokenization
                     token.LineEnd = reader.Line;
                     token.LinePosition = endLinePosition;
                     token.LinePositionEnd = reader.LinePosition;
-                    token.Text = readerSubstring(endPosition, reader.Position);
+                    token.Text = reader.Substring(endPosition, reader.Position);
                     yield return token;
                 }
             }
@@ -244,7 +239,7 @@ namespace Latvian.Tokenization
                 token.LineEnd = reader.Line;
                 token.LinePosition = startLinePosition;
                 token.LinePositionEnd = reader.LinePosition;
-                token.Text = readerSubstring(startPosition, reader.Position);
+                token.Text = reader.Substring(startPosition, reader.Position);
                 yield return token;
             }
         }
