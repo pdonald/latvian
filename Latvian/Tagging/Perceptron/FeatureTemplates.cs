@@ -314,12 +314,7 @@ namespace Latvian.Tagging.Perceptron
 
             public string Transform(Token token)
             {
-                TagWithLemma lemmaTag = token.PredictedTag as TagWithLemma;
-
-                if (lemmaTag != null)
-                    return lemmaTag.Lemma;
-
-                return null;
+                return token.PredictedTag.Lemma;
             }
         }
 

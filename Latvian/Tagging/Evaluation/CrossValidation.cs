@@ -31,13 +31,13 @@ namespace Latvian.Tagging.Evaluation
 
         public int Folds { get; set; }
         public bool Randomize { get; set; }
-        public int RandomSeed { get; set; }
+        public uint RandomSeed { get; set; }
         public List<Sentence> Sentences { get; private set; }
 
         public Results Evaluate()
         {
-            Random random = new Random(RandomSeed);
-            List<Sentence> sentences = Randomize ? Sentences.OrderBy(s => random.Next()).ToList() : Sentences;
+            Helpers.XorShiftRandom random = new Helpers.XorShiftRandom(RandomSeed);
+            List<Sentence> sentences = Randomize ? Sentences.OrderBy(s => random.NextUInt()).ToList() : Sentences;
             
             List<Sentence>[] folds = new List<Sentence>[Folds];
             for (int i = 0; i < Folds; i++)
@@ -49,22 +49,30 @@ namespace Latvian.Tagging.Evaluation
             Results results = new Results();
             DateTime start = DateTime.Now;
 
-            int progress = 0;
+            int iterationsStarted = 0;
 
             Parallel.For(0, Folds, (i) =>
             {
                 Results.Result result = new Results.Result();
                 result.Fold = i + 1;
-                result.Test = folds[i].Select(s => new Sentence(s.Select(t => new Token(t)))).ToList(); // clone
+                result.Test = folds[i].Select(sentence => sentence.Clone()).ToList();
                 result.Train = new List<Sentence>();
 
                 for (int j = 0; j < Folds; j++)
                     if (j != i)
-                        result.Train.AddRange(folds[j].Select(s => new Sentence(s.Select(t => new Token(t))))); // clone
+                        result.Train.AddRange(folds[j].Select(sentence => sentence.Clone()));
 
                 ITrainedTagger tagger = Activator.CreateInstance<T>();
+                
                 if (tagger is Tagging.Perceptron.PerceptronTagger)
-                    ((Tagging.Perceptron.PerceptronTagger)tagger).IterationStarted += (it) => { lock (folds) progress++; System.Diagnostics.Debug.WriteLine(string.Format("Fold {0} iteration {1}, {2:0}% done", i, it, 100 * ((double)progress / (Folds * Folds)))); };
+                {
+                    ((Tagging.Perceptron.PerceptronTagger)tagger).IterationStarted += (it) =>
+                    {
+                        lock (folds) iterationsStarted++;
+                        System.Diagnostics.Debug.WriteLine(string.Format("Fold {0} iteration {1}, {2:0}% done", i, it, 100 * ((double)iterationsStarted / (Folds * Folds))));
+                    };
+                }
+
                 tagger.Train(result.Train);
                 tagger.Tag(result.Test);
 
@@ -141,12 +149,16 @@ namespace Latvian.Tagging.Evaluation
                 public List<Sentence> Train { get; set; }
                 public List<Sentence> Test { get; set; }
 
+                public IEnumerable<Token> WrongTags { get { return Test.SelectMany(t => t).Where(t => !t.IsTagCorrect); } }
+                public IEnumerable<Token> WrongMsds { get { return Test.SelectMany(t => t).Where(t => !t.IsMsdCorrect); } }
+                public IEnumerable<Token> WrongLemmas { get { return Test.SelectMany(t => t).Where(t => !t.IsLemmaCorrect); } }
+
                 public double CorrectPercentage
                 {
                     get
                     {
                         Token[] tokens = Test.SelectMany(t => t).ToArray();
-                        return 100 * ((double)tokens.Count(t => t.IsTagCorrect) / tokens.Count());
+                        return 100 * ((double)tokens.Count(t => t.IsCorrect) / tokens.Count());
                     }
                 }
 

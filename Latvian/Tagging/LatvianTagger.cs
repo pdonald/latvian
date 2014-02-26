@@ -43,9 +43,11 @@ namespace Latvian.Tagging
             for (int i = 1; i <= 4; i++)
                 FeatureTemplates.Add(new Current(new TokenSuffix(i)));
 
-            // todo: for lumii
             FeatureTemplates.Add(new PrevNoun());
             FeatureTemplates.Add(new PrevNoun2());
+
+            //LemmaFeatureTemplates.Add(new Multiple(new Current(new Pos()), new Current(new TokenText())));
+            //LemmaFeatureTemplates.Add(new Current(new TokenText()));
         }
 
         public LatvianTagger(string filename)

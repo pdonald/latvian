@@ -45,11 +45,14 @@
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers\HashCodeGenerator.cs" />
+    <Compile Include="Helpers\XorShiftRandom.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Tagging\Perceptron\FeatureTemplates.cs" />
     <Compile Include="Tagging\Perceptron\Perceptron.cs" />
     <Compile Include="Tagging\Perceptron\PerceptronTagger.cs" />
-    <Compile Include="Tagging\Perceptron\Helpers\IndexedSentence.cs" />
-    <Compile Include="Tagging\Perceptron\Helpers\XorShiftRandom.cs" />
+    <Compile Include="Tagging\Perceptron\IndexedSentence.cs" />
     <Compile Include="Tagging\Evaluation\CrossValidation.cs" />
     <Compile Include="Tagging\Evaluation\Tester.cs" />
     <Compile Include="Tagging\ITagger.cs" />

@@ -20,7 +20,7 @@ namespace Latvian.Tagging
 {
     public class Token
     {
-        private int hashCode;
+        private int? hashCode;
 
         public Token(string token, IEnumerable<Tag> possibleTags)
         {
@@ -59,16 +59,16 @@ namespace Latvian.Tagging
             Sentence = token.Sentence;
         }
 
-        public string Text { get; set; }
-        public string TextTrueCase { get; set; }
-        public Tag CorrectTag { get; set; }
-        public Tag[] PossibleTags { get; set; }
+        public string Text { get; private set; }
+        public string TextTrueCase { get; private set; }
+        public Tag CorrectTag { get; private set; }
+        public Tag[] PossibleTags { get; private set; }
         public Tag PredictedTag { get; set; }
-        public Sentence Sentence { get; set; }
+        public Sentence Sentence { get; private set; }
 
-        public bool IsPosCorrect
+        public bool IsCorrect
         {
-            get { return PredictedTag != null && CorrectTag != null && PredictedTag.PartOfSpeech == CorrectTag.PartOfSpeech; }
+            get { return IsMsdCorrect && IsLemmaCorrect; }
         }
 
         public bool IsTagCorrect
@@ -76,35 +76,49 @@ namespace Latvian.Tagging
             get { return PredictedTag != null && CorrectTag != null && PredictedTag.Equals(CorrectTag); }
         }
 
+        public bool IsPosCorrect
+        {
+            get { return PredictedTag != null && CorrectTag != null && PredictedTag.PartOfSpeech == CorrectTag.PartOfSpeech; }
+        }
+
+        public bool IsMsdCorrect
+        {
+            get { return PredictedTag != null && CorrectTag != null && PredictedTag.Msd == CorrectTag.Msd; }
+        }
+
+        public bool IsLemmaCorrect
+        {
+            get { return PredictedTag != null && CorrectTag != null && PredictedTag.Lemma == CorrectTag.Lemma; }
+        }
+
         public override string ToString()
         {
             if (PossibleTags != null)
             {
-                return string.Format("{0} [{1}: {2}]", TextTrueCase, CorrectTag,
+                return string.Format("{0} [*{1}* {2}]", TextTrueCase, CorrectTag,
                     string.Join(", ", PossibleTags.Select(t => t.ToString())));
             }
             else
             {
-                return string.Format("{0} [{1}]", TextTrueCase, CorrectTag);
+                return string.Format("{0} [*{1}*]", TextTrueCase, CorrectTag);
             }
         }
 
         public override int GetHashCode()
         {
-            if (hashCode == 0)
-            {
-                hashCode = 27;
-                hashCode = (13 * hashCode) + TextTrueCase.GetHashCode();
-                foreach (Tag tag in PossibleTags)
-                    hashCode = (13 * hashCode) + tag.GetHashCode();
-            }
-
-            return hashCode;
+            if (hashCode == null)
+                hashCode = Helpers.HashCodeGenerator.Create(TextTrueCase, PossibleTags);
+            return hashCode.Value;
         }
 
         public override bool Equals(object other)
         {
-            return other != null && object.ReferenceEquals(this, other);
+            return ReferenceEquals(this, other);
+        }
+
+        public Token Clone()
+        {
+            return new Token(this);
         }
     }
 
@@ -117,6 +131,11 @@ namespace Latvian.Tagging
         public Sentence(IEnumerable<Token> tokens)
             : base(tokens)
         {
+        }
+
+        public Sentence Clone()
+        {
+            return new Sentence(this.Select(token => token.Clone()));
         }
     }
 }

@@ -20,7 +20,7 @@ namespace Latvian.Tagging.Evaluation
 {
     class Tester<T> where T : ITrainedTagger
     {
-        private Random random = new Random(1);
+        private Helpers.XorShiftRandom random = new Helpers.XorShiftRandom();
         private List<Sentence> corpus = new List<Sentence>();
 
         public Tester()
@@ -57,7 +57,7 @@ namespace Latvian.Tagging.Evaluation
 
             IEnumerable<Sentence> data = corpus;
             if (randomize)
-                data = data.OrderBy(x => random.Next()).ToList();
+                data = data.OrderBy(x => random.NextUInt()).ToList();
 
             List<Sentence> train = data.Take((int)(data.Count() * trainPercentage)).ToList();
             List<Sentence> test = data.Except(train).ToList();

@@ -18,21 +18,52 @@ namespace Latvian.Tagging
 {
     public class Tag : IEquatable<Tag>
     {
-        protected readonly int hashCode;
+        private readonly string msd;
+        private readonly string lemma;
+        private int? hashCode;
 
-        public Tag(string msd)
+        public Tag(string value)
+        {
+            if (value == null)
+                throw new ArgumentNullException("value");
+
+            string[] values = value.Split('/');
+
+            if (values.Length == 0)
+                throw new ArgumentException("Value cannot be empty", "value");
+            if (values.Length > 2)
+                throw new ArgumentException("Value may contain at most one forward slash that separates msd from lemma", "value");
+            if (values[0].Length == 0)
+                throw new ArgumentException("Morphosyntactic descriptor cannot be empty", "value");
+
+            this.msd = values[0];
+            this.lemma = values.Length == 2 ? values[1] : null;
+        }
+
+        public Tag(string msd, string lemma)
         {
             if (msd == null)
                 throw new ArgumentNullException("msd");
+            if (msd.Length == 0)
+                throw new ArgumentException("Morphosyntactic descriptor cannot be empty", "msd");
 
-            Msd = msd;
-            hashCode = Msd.GetHashCode();
+            this.msd = msd;
+            this.lemma = lemma;
+        }
+
+        public string Value
+        {
+            get { return Msd + (Lemma != null ? "/" + Lemma : ""); }
         }
 
         public string Msd
         {
-            get;
-            private set;
+            get { return msd; }
+        }
+
+        public string Lemma
+        {
+            get { return lemma; }
         }
 
         public char PartOfSpeech
@@ -42,12 +73,14 @@ namespace Latvian.Tagging
 
         public override string ToString()
         {
-            return Msd;
+            return Value;
         }
 
         public override int GetHashCode()
         {
-            return hashCode;
+            if (hashCode == null)
+                hashCode = Helpers.HashCodeGenerator.Create(msd, lemma);
+            return hashCode.Value;
         }
 
         public override bool Equals(object other)
@@ -57,74 +90,7 @@ namespace Latvian.Tagging
 
         public bool Equals(Tag other)
         {
-            return other != null && other.Msd == Msd;
-        }
-    }
-
-    public class TagWithLemma : Tag, IEquatable<TagWithLemma>
-    {
-        protected readonly int hashCodeWithLemma;
-
-        public TagWithLemma(string msd, string lemma)
-            : base(msd)
-        {
-            if (lemma == null)
-                throw new ArgumentNullException("lemma");
-
-            Lemma = lemma;
-
-            hashCodeWithLemma = 27;
-            hashCodeWithLemma = (13 * hashCodeWithLemma) + base.hashCode;
-            hashCodeWithLemma = (13 * hashCodeWithLemma) + Lemma.GetHashCode();
-        }
-
-        public string Lemma
-        {
-            get;
-            private set;
-        }
-
-        public override string ToString()
-        {
-            return string.Format("{0}/{1}", Msd, Lemma);
-        }
-
-        public override int GetHashCode()
-        {
-            return hashCodeWithLemma;
-        }
-
-        public override bool Equals(object other)
-        {
-            return Equals(other as TagWithLemma);
-        }
-
-        public bool Equals(TagWithLemma other)
-        {
-            return base.Equals(other as Tag) && other.Lemma == Lemma;
-        }
-    }
-
-    public class TagWithInformationalLemma : TagWithLemma, IEquatable<TagWithInformationalLemma>
-    {
-        public TagWithInformationalLemma(string msd, string lemma)
-            : base(msd, lemma)
-        {
-        }
-
-        public override int GetHashCode()
-        {
-            return hashCode;
-        }
-
-        public override bool Equals(object other)
-        {
-            return Equals(other as TagWithInformationalLemma);
-        }
-
-        public bool Equals(TagWithInformationalLemma other)
-        {
-            return base.Equals(other as Tag);
+            return other != null && other.msd == msd && other.lemma == lemma;
         }
     }
 }

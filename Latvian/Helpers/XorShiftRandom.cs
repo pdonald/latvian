@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Latvian.Tagging.Perceptron
+namespace Latvian.Helpers
 {
     // http://www.jstatsoft.org/v08/i14/paper
     // http://ayende.com/blog/165185/big-data-search-sorting-randomness

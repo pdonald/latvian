@@ -131,80 +131,6 @@ namespace Latvian.Tagging.Perceptron
                 return Value.ToString();
             }
         }
-
-        public class Feature : IEquatable<Feature>
-        {
-            private readonly string name;
-            private readonly string value;
-            private readonly int hashCode;
-
-            public Feature(string value)
-                : this(null, value)
-            {
-            }
-
-            public Feature(string name, string value)
-            {
-                this.name = name;
-                this.value = value;
-
-                hashCode = 27;
-                if (name != null) hashCode = (13 * hashCode) + name.GetHashCode();
-                if (value != null) hashCode = (13 * hashCode) + value.GetHashCode();
-            }
-
-            public string Name { get { return name; } }
-            public string Value { get { return value; } }
-
-            public override string ToString()
-            {
-                if (string.IsNullOrEmpty(Name))
-                    return Value;
-                return string.Format("{0} = {1}", Name, Value);
-            }
-
-            public override int GetHashCode()
-            {
-                return hashCode;
-            }
-
-            public override bool Equals(object other)
-            {
-                return Equals(other as Feature);
-            }
-
-            public bool Equals(Feature other)
-            {
-                return other != null &&
-                       other.name == name &&
-                       other.value == value;
-            }
-        }
-
-        public class Features : List<Feature>
-        {
-            public Features()
-                : base()
-            {
-            }
-
-            public Features(int capacity)
-                : base(capacity)
-            {
-            }
-
-            public bool IsNullValueAllowed
-            {
-                get;
-                set;
-            }
-
-            public void Add(string name, string value)
-            {
-                if (value != null || IsNullValueAllowed)
-                    Add(new Feature(name, value));
-            }
-        }
     }
 
     public class Perceptron : Perceptron<Tag>
@@ -217,7 +143,7 @@ namespace Latvian.Tagging.Perceptron
 
                 foreach (Tag tag in weights.Keys)
                 {
-                    writer.Write(tag.Msd); // todo: serialize other types of tags
+                    writer.Write(tag.Value);
                     writer.Write(weights[tag].Count);
 
                     foreach (Feature feature in weights[tag].Keys)
@@ -251,6 +177,77 @@ namespace Latvian.Tagging.Perceptron
                     }
                 }
             }
+        }
+    }
+
+    public class Feature : IEquatable<Feature>
+    {
+        private readonly string name;
+        private readonly string value;
+        private readonly int hashCode;
+
+        public Feature(string value)
+            : this(null, value)
+        {
+        }
+
+        public Feature(string name, string value)
+        {
+            this.name = name;
+            this.value = value;
+            this.hashCode = Helpers.HashCodeGenerator.Create(name, value);
+        }
+
+        public string Name { get { return name; } }
+        public string Value { get { return value; } }
+
+        public override string ToString()
+        {
+            if (string.IsNullOrEmpty(Name))
+                return Value;
+            return string.Format("{0} = {1}", Name, Value);
+        }
+
+        public override int GetHashCode()
+        {
+            return hashCode;
+        }
+
+        public override bool Equals(object other)
+        {
+            return Equals(other as Feature);
+        }
+
+        public bool Equals(Feature other)
+        {
+            return other != null &&
+                   other.name == name &&
+                   other.value == value;
+        }
+    }
+
+    public class Features : List<Feature>
+    {
+        public Features()
+            : base()
+        {
+        }
+
+        public Features(int capacity)
+            : base(capacity)
+        {
+        }
+
+        public bool IsNullValueAllowed
+        {
+            get;
+            set;
+        }
+
+        public void Add(string name, string value)
+        {
+            if (value != null || IsNullValueAllowed)
+                Add(new Feature(name, value));
         }
     }
 }

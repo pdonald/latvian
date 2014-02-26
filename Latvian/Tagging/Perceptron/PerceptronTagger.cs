@@ -21,22 +21,24 @@ using System.Threading.Tasks;
 
 namespace Latvian.Tagging.Perceptron
 {
-    using Features = Perceptron<Tag>.Features;
     using Normalizer = Func<Token, Token>;
     using Unnormalizer = Action<Token>; // todo: rename
 
     public class PerceptronTagger : ITrainedTagger
     {
-        private Perceptron perceptron;
-        private XorShiftRandom random;
-        private List<FeatureTemplate> featureTemplates;
+        private Perceptron perceptronMsd;
+        private Perceptron<string> perceptronLemma;
+        private Helpers.XorShiftRandom random;
+        private List<FeatureTemplate> featureTemplatesTag;
+        private List<FeatureTemplate> featureTemplatesLemma;
         private List<Normalizer> normalizers;
         private List<Unnormalizer> unnormalizers;
 
         public PerceptronTagger()
         {
-            random = new XorShiftRandom();
-            featureTemplates = new List<FeatureTemplate>();
+            random = new Helpers.XorShiftRandom();
+            featureTemplatesTag = new List<FeatureTemplate>();
+            featureTemplatesLemma = new List<FeatureTemplate>();
             normalizers = new List<Normalizer>(); // todo: fix new possible clone in Tag()
             unnormalizers = new List<Unnormalizer>();
             
@@ -49,7 +51,12 @@ namespace Latvian.Tagging.Perceptron
         #region Properties
         public List<FeatureTemplate> FeatureTemplates
         {
-            get { return featureTemplates; }
+            get { return featureTemplatesTag; }
+        }
+
+        public List<FeatureTemplate> LemmaFeatureTemplates
+        {
+            get { return featureTemplatesLemma; }
         }
 
         public List<Normalizer> Normalizers
@@ -95,12 +102,15 @@ namespace Latvian.Tagging.Perceptron
         {
             if (filename == null)
                 throw new ArgumentNullException("filename");
-            if (perceptron == null)
+            if (perceptronMsd == null)
                 throw new InvalidOperationException("Can't save a model that has not been loaded or trained.");
 
             // todo: load/save feature templates + other tag classes + other settings + versioning
             using (Stream stream = new GZipStream(new FileStream(filename, FileMode.Create, FileAccess.Write), CompressionLevel.Optimal))
-                perceptron.Save(stream);
+            {
+                perceptronMsd.Save(stream);
+                // todo: lemma perceptron
+            }
         }
 
         public void Load(string filename)
@@ -117,18 +127,18 @@ namespace Latvian.Tagging.Perceptron
             if (stream == null)
                 throw new ArgumentNullException("stream");
 
-            perceptron = new Perceptron();
+            perceptronMsd = new Perceptron();
 
             using (Stream decompressed = new GZipStream(stream, CompressionMode.Decompress))
-                perceptron.Load(decompressed);
+                perceptronMsd.Load(decompressed);
         }
         #endregion
 
-        private Features GetFeatures(Token token, IndexedSentence sentence, bool? local = null)
+        private Features GetFeatures(List<FeatureTemplate> list, Token token, IndexedSentence sentence, bool? local = null)
         {
-            Features features = new Features(FeatureTemplates.Count);
+            Features features = new Features(list.Count);
 
-            foreach (FeatureTemplate template in FeatureTemplates)
+            foreach (FeatureTemplate template in list)
             {
                 if (local == null || local == template.IsLocal)
                 {
@@ -161,7 +171,8 @@ namespace Latvian.Tagging.Perceptron
 
         public void Train(IEnumerable<Sentence> sentences)
         {
-            perceptron = new Perceptron();
+            perceptronMsd = new Perceptron();
+            perceptronLemma = new Perceptron<string>();
 
             List<IndexedSentence> normalizedSentences =
                 sentences.Select(s => new IndexedSentence((Reverse ? (s as IEnumerable<Token>).Reverse() : s).Select(t => Normalize(t)))).ToList();
@@ -175,32 +186,66 @@ namespace Latvian.Tagging.Perceptron
                 {
                     foreach (Token token in sentence)
                     {
-                        double? bestScore = null;
-                        Tag bestPrediction = null;
-                        Features bestFeatures = null;
+                        if (token.PossibleTags.Length == 1)
+                        {
+                            token.PredictedTag = token.PossibleTags[0];
+                            continue;
+                        }
 
-                        // todo: cache features in the first iteration
-                        Features localFeatures = GetFeatures(token, sentence, true);
+                        double? bestMsdScore = null;
+                        Tag bestMsd = null;
+                        Features bestMsdFeatures = null;
+                        
+                        Features localFeaturesTag = GetFeatures(featureTemplatesTag, token, sentence, true);
 
                         foreach (Tag tag in token.PossibleTags)
                         {
-                            token.PredictedTag = tag;
+                            Tag tagMsd = new Tag(tag.Msd);
+                            token.PredictedTag = tagMsd;
 
-                            Features features = GetFeatures(token, sentence, false);
-                            features.AddRange(localFeatures);
-                            double score = perceptron.Score(features, tag);
-
-                            if (bestScore == null || score > bestScore.Value)
+                            Features featuresTag = GetFeatures(featureTemplatesTag, token, sentence, false);
+                            featuresTag.AddRange(localFeaturesTag);
+                            
+                            double score = perceptronMsd.Score(featuresTag, tagMsd);
+                            if (bestMsdScore == null || score > bestMsdScore.Value)
                             {
-                                bestScore = score;
-                                bestPrediction = tag;
-                                bestFeatures = features;
+                                bestMsdScore = score;
+                                bestMsd = tagMsd;
+                                bestMsdFeatures = featuresTag;
                             }
                         }
 
-                        token.PredictedTag = token.CorrectTag;
+                        perceptronMsd.Update(bestMsdFeatures, new Tag(token.CorrectTag.Msd), bestMsd);
 
-                        perceptron.Update(bestFeatures, token.CorrectTag, bestPrediction);
+                        if (token.CorrectTag.Lemma != null)
+                        {
+                            double? bestLemmaScore = null;
+                            string bestLemma = null;
+                            Features bestLemmaFeatures = null;
+
+                            token.PredictedTag = new Tag(token.CorrectTag.Msd);
+                            Features localFeaturesLemma = GetFeatures(featureTemplatesLemma, token, sentence, true);
+
+                            foreach (Tag tag in token.PossibleTags)
+                            {
+                                if (tag.Msd != bestMsd.Msd || tag.Lemma == null)
+                                    continue;
+                                token.PredictedTag = new Tag(token.CorrectTag.Msd, tag.Lemma);
+                                Features featuresLemma = GetFeatures(featureTemplatesLemma, token, sentence, false);
+                                featuresLemma.AddRange(localFeaturesLemma);
+                                double scoreLemma = perceptronLemma.Score(featuresLemma, tag.Lemma);
+                                if (bestLemmaScore == null || scoreLemma > bestLemmaScore.Value)
+                                {
+                                    bestLemmaScore = scoreLemma;
+                                    bestLemma = tag.Lemma;
+                                    bestLemmaFeatures = featuresLemma;
+                                }
+                            }
+
+                            perceptronLemma.Update(bestLemmaFeatures, token.CorrectTag.Lemma, bestLemma);
+                        }
+
+                        token.PredictedTag = token.CorrectTag;
                     }
                 }
 
@@ -210,15 +255,17 @@ namespace Latvian.Tagging.Perceptron
 
             if (Average)
             {
-                perceptron.AverageWeights();
+                perceptronMsd.AverageWeights();
+                perceptronLemma.AverageWeights();
             }
 
-            perceptron.RemoveInsignificantWeights(WeightThreshold);
+            perceptronMsd.RemoveInsignificantWeights(WeightThreshold);
+            perceptronLemma.RemoveInsignificantWeights(WeightThreshold);
         }
 
         public void Tag(IEnumerable<Sentence> sentences)
         {
-            if (perceptron == null)
+            if (perceptronMsd == null)
                 throw new InvalidOperationException("Model not loaded.");
 
             Parallel.ForEach(sentences, (sentence, index) =>
@@ -234,27 +281,51 @@ namespace Latvian.Tagging.Perceptron
                     }
                     else
                     {
-                        double? maxScore = null;
-                        Tag bestPrediction = null;
+                        double? maxScoreMsd = null;
+                        Tag bestMsd = null;
 
-                        Features localFeatures = GetFeatures(token, normalizedSentence, true);
+                        Features localFeaturesTag = GetFeatures(featureTemplatesTag, token, normalizedSentence, true);
 
                         foreach (Tag tag in token.PossibleTags)
                         {
-                            token.PredictedTag = tag;
+                            Tag tagMsd = new Tag(tag.Msd);
+                            token.PredictedTag = tagMsd;
 
-                            Features features = GetFeatures(token, normalizedSentence, false);
-                            features.AddRange(localFeatures);
-                            double score = perceptron.Score(features, tag);
-
-                            if (maxScore == null || score > maxScore.Value)
+                            Features featuresTag = GetFeatures(featureTemplatesTag, token, normalizedSentence, false);
+                            featuresTag.AddRange(localFeaturesTag);
+                            
+                            double scoreMsd = perceptronMsd.Score(featuresTag, tagMsd);
+                            if (maxScoreMsd == null || scoreMsd > maxScoreMsd.Value)
                             {
-                                maxScore = score;
-                                bestPrediction = tag;
+                                maxScoreMsd = scoreMsd;
+                                bestMsd = tagMsd;
                             }
                         }
 
-                        token.PredictedTag = bestPrediction;
+                        double? maxScoreLemma = null;
+                        string bestLemma = null;
+
+                        token.PredictedTag = bestMsd;
+                        Features localFeaturesLemma = GetFeatures(featureTemplatesLemma, token, normalizedSentence, true);
+                        
+                        foreach (Tag tag in token.PossibleTags)
+                        {
+                            if (tag.Msd != bestMsd.Msd || tag.Lemma == null)
+                                continue;
+
+                            token.PredictedTag = new Tag(token.CorrectTag.Msd, tag.Lemma);
+                            Features featuresLemma = GetFeatures(featureTemplatesLemma, token, normalizedSentence, false);
+                            featuresLemma.AddRange(localFeaturesLemma);
+                            
+                            double scoreLemma = perceptronLemma.Score(featuresLemma, tag.Lemma);
+                            if (maxScoreLemma == null || scoreLemma > maxScoreLemma.Value)
+                            {
+                                maxScoreLemma = scoreLemma;
+                                bestLemma = tag.Lemma;
+                            }
+                        }
+
+                        token.PredictedTag = new Tag(bestMsd.Msd, bestLemma);
                     }
 
                     int pos = normalizedSentence[token];

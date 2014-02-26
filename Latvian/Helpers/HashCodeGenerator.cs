@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-
-namespace Latvian.Tagging
+namespace Latvian.Helpers
 {
-    public interface ITagger
+    public static class HashCodeGenerator
     {
-        void Tag(IEnumerable<Sentence> sentences); // todo: streaming
-    }
-
-    public interface ITrainedTagger : ITagger
-    {
-        void Train(IEnumerable<Sentence> sentences);
+        public static int Create(params object[] args)
+        {
+            int hashCode = 27;
+            for (int i = 0; i < args.Length; i++)
+                hashCode = (13 * hashCode) + (args[i] != null ? args[i].GetHashCode() : 0);
+            return hashCode;
+        }
     }
 }
