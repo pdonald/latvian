@@ -207,7 +207,7 @@ namespace Latvian.Tagging.Perceptron
 
                 for (int i = position - 1; i >= 0; i--)
                 {
-                    if ((sentence[i].PredictedTag.PartOfSpeech == 'n' || sentence[i].PredictedTag.PartOfSpeech == 'p') && (sentence[i].PredictedTag.Msd[4] != 'g' && sentence[i].PredictedTag.Msd[4] != 'l'))
+                    if (sentence[i].PredictedTag != null && (sentence[i].PredictedTag.PartOfSpeech == 'n' || sentence[i].PredictedTag.PartOfSpeech == 'p') && (sentence[i].PredictedTag.Msd[4] != 'g' && sentence[i].PredictedTag.Msd[4] != 'l'))
                     {
                         return sentence[i].PredictedTag.Msd;
                     }
@@ -230,13 +230,13 @@ namespace Latvian.Tagging.Perceptron
 
                 for (int i = position - 1, prevPos = -1; i >= 0; i--)
                 {
-                    if (sentence[i].PredictedTag.PartOfSpeech == 'n')
+                    if (sentence[i].PredictedTag != null && sentence[i].PredictedTag.PartOfSpeech == 'n')
                     {
                         prevPos = i;
                     }
                     else
                     {
-                        if (prevPos != -1)
+                        if (prevPos != -1 && sentence[prevPos].PredictedTag != null)
                         {
                             return sentence[prevPos].PredictedTag.Msd;
                         }
@@ -288,6 +288,8 @@ namespace Latvian.Tagging.Perceptron
 
             public string Transform(Token token)
             {
+                if (token.PredictedTag == null)
+                    return null;
                 return token.PredictedTag.Msd;
             }
         }
@@ -301,6 +303,8 @@ namespace Latvian.Tagging.Perceptron
 
             public string Transform(Token token)
             {
+                if (token.PredictedTag == null)
+                    return null;
                 return token.PredictedTag.PartOfSpeech.ToString();
             }
         }
@@ -314,6 +318,8 @@ namespace Latvian.Tagging.Perceptron
 
             public string Transform(Token token)
             {
+                if (token.PredictedTag == null)
+                    return null;
                 return token.PredictedTag.Lemma;
             }
         }
@@ -386,6 +392,9 @@ namespace Latvian.Tagging.Perceptron
 
             public string Transform(Token token)
             {
+                if (token.PredictedTag == null)
+                    return null;
+
                 if (token.PredictedTag.Msd.Length >= length)
                     return token.PredictedTag.Msd.Substring(0, length);
 

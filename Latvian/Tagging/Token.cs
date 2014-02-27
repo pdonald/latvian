@@ -28,8 +28,8 @@ namespace Latvian.Tagging
                 throw new ArgumentNullException("token");
             if (possibleTags == null)
                 throw new ArgumentNullException("possibleTags");
-            if (possibleTags.Count() == 0)
-                throw new ArgumentException("possibleTags must contain at least one tag");
+            //if (possibleTags.Count() == 0)
+                //throw new ArgumentException("possibleTags must contain at least one tag");
 
             Text = token.ToLower();
             TextTrueCase = token;
@@ -39,8 +39,8 @@ namespace Latvian.Tagging
         public Token(string token, IEnumerable<Tag> possibleTags, Tag correctTag, Sentence sentence)
             : this(token, possibleTags)
         {
-            if (correctTag != null && !possibleTags.Any(t => t.Equals(correctTag)))
-                throw new ArgumentOutOfRangeException("possibleTags must contain correctTag");
+            //if (correctTag != null && !possibleTags.Any(t => t.Equals(correctTag)))
+                //throw new ArgumentOutOfRangeException("possibleTags must contain correctTag");
 
             CorrectTag = correctTag;
             Sentence = sentence;

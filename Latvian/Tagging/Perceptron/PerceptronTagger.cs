@@ -177,6 +177,17 @@ namespace Latvian.Tagging.Perceptron
             List<IndexedSentence> normalizedSentences =
                 sentences.Select(s => new IndexedSentence((Reverse ? (s as IEnumerable<Token>).Reverse() : s).Select(t => Normalize(t)))).ToList();
 
+            HashSet<Tag> alltags = new HashSet<Tag>();
+            foreach (IndexedSentence sentence in normalizedSentences)
+            {
+                foreach (Token token in sentence)
+                {
+                    alltags.Add(new Tag(token.CorrectTag.Msd, null));
+                    foreach (Tag tag in token.PossibleTags)
+                        alltags.Add(new Tag(tag.Msd, null));
+                }
+            }
+
             for (int iteration = 0; iteration < Iterations; iteration++)
             {
                 if (IterationStarted != null)
@@ -186,11 +197,15 @@ namespace Latvian.Tagging.Perceptron
                 {
                     foreach (Token token in sentence)
                     {
-                        if (token.PossibleTags.Length == 1)
+                        if (token.PossibleTags != null && token.PossibleTags.Length == 1)
                         {
-                            token.PredictedTag = token.PossibleTags[0];
+                            token.PredictedTag = token.CorrectTag; // todo: possibleTags[0]?? what if it's not correct tag?
                             continue;
                         }
+
+                        IEnumerable<Tag> possibleTags = token.PossibleTags;
+                        if (possibleTags == null || !possibleTags.Any())
+                            possibleTags = alltags;
 
                         double? bestMsdScore = null;
                         Tag bestMsd = null;
@@ -198,7 +213,7 @@ namespace Latvian.Tagging.Perceptron
                         
                         Features localFeaturesTag = GetFeatures(featureTemplatesTag, token, sentence, true);
 
-                        foreach (Tag tag in token.PossibleTags)
+                        foreach (Tag tag in possibleTags)
                         {
                             Tag tagMsd = new Tag(tag.Msd);
                             token.PredictedTag = tagMsd;
@@ -226,7 +241,7 @@ namespace Latvian.Tagging.Perceptron
                             token.PredictedTag = new Tag(token.CorrectTag.Msd);
                             Features localFeaturesLemma = GetFeatures(featureTemplatesLemma, token, sentence, true);
 
-                            foreach (Tag tag in token.PossibleTags)
+                            foreach (Tag tag in possibleTags)
                             {
                                 if (tag.Msd != bestMsd.Msd || tag.Lemma == null)
                                     continue;
@@ -242,7 +257,8 @@ namespace Latvian.Tagging.Perceptron
                                 }
                             }
 
-                            perceptronLemma.Update(bestLemmaFeatures, token.CorrectTag.Lemma, bestLemma);
+                            if (bestLemmaFeatures != null)
+                                perceptronLemma.Update(bestLemmaFeatures, token.CorrectTag.Lemma, bestLemma);
                         }
 
                         token.PredictedTag = token.CorrectTag;
@@ -275,9 +291,13 @@ namespace Latvian.Tagging.Perceptron
 
                 foreach (Token token in normalizedSentence)
                 {
-                    if (token.PossibleTags.Length == 1)
+                    Tag[] possibleTags = token.PossibleTags;
+                    if (possibleTags == null || possibleTags.Length == 0)
+                        possibleTags = perceptronMsd.Tags.ToArray();
+                    
+                    if (possibleTags.Length == 1)
                     {
-                        token.PredictedTag = token.PossibleTags[0];
+                        token.PredictedTag = possibleTags[0];
                     }
                     else
                     {
@@ -286,7 +306,7 @@ namespace Latvian.Tagging.Perceptron
 
                         Features localFeaturesTag = GetFeatures(featureTemplatesTag, token, normalizedSentence, true);
 
-                        foreach (Tag tag in token.PossibleTags)
+                        foreach (Tag tag in possibleTags)
                         {
                             Tag tagMsd = new Tag(tag.Msd);
                             token.PredictedTag = tagMsd;
@@ -308,7 +328,7 @@ namespace Latvian.Tagging.Perceptron
                         token.PredictedTag = bestMsd;
                         Features localFeaturesLemma = GetFeatures(featureTemplatesLemma, token, normalizedSentence, true);
                         
-                        foreach (Tag tag in token.PossibleTags)
+                        foreach (Tag tag in possibleTags)
                         {
                             if (tag.Msd != bestMsd.Msd || tag.Lemma == null)
                                 continue;

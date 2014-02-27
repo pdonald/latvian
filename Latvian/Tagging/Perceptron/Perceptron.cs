@@ -24,6 +24,16 @@ namespace Latvian.Tagging.Perceptron
         protected Dictionary<T, Dictionary<Feature, Weight>> weights = new Dictionary<T, Dictionary<Feature, Weight>>();
         private int updateCount = 0;
 
+        public IEnumerable<T> Tags
+        {
+            get { return weights.Keys; }
+        }
+
+        public IEnumerable<Feature> Features
+        {
+            get { return weights.Values.SelectMany(v => v.Keys).Distinct(); }
+        }
+
         public double Score(Features features, T tag)
         {
             double score = 0;
