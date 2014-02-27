@@ -90,7 +90,47 @@
       <Compile Include="$(IntermediateOutputPath)VersionInfo.cs" />
     </ItemGroup>
   </Target>
+  <UsingTask TaskName="Zip" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <OutputFilename ParameterType="System.String" Required="true" />
+      <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System.IO.Compression" />
+      <Using Namespace="System.IO.Compression" />
+      <Code Type="Fragment" Language="cs">
+      <![CDATA[
+        try
+        {
+          using (Stream zipStream = new FileStream(Path.GetFullPath(OutputFilename), FileMode.Create, FileAccess.Write))
+          using (ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Create))
+          {
+              foreach (ITaskItem fileItem in Files)
+              {
+                  string filename = fileItem.ItemSpec;
+                  using (Stream fileStream = new FileStream(filename, FileMode.Open, FileAccess.Read))
+                  using (Stream fileStreamInZip = archive.CreateEntry(new FileInfo(filename).Name).Open())
+                      fileStream.CopyTo(fileStreamInZip);
+              }
+          }
+          return true;
+        }
+        catch (Exception ex)
+        {
+          Log.LogErrorFromException(ex);
+          return false;
+        }
+      ]]>
+      </Code>
+    </Task>
+  </UsingTask>
   <Target Name="AfterBuild" Condition="$(Configuration) == 'Release'">
     <Copy SourceFiles="..\License.txt" DestinationFiles="$(OutputPath)Latvian.License.txt" />
+    <ItemGroup>
+      <ZipFiles Include="$(OutputPath)Latvian.dll" />
+      <ZipFiles Include="$(OutputPath)Latvian.pdb" />
+      <ZipFiles Include="$(OutputPath)Latvian.License.txt" />
+    </ItemGroup>
+    <Zip OutputFilename="$(OutputPath)Latvian-$(Version).zip" Files="@(ZipFiles)" />
   </Target>
 </Project>
