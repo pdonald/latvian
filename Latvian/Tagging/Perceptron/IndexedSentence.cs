@@ -20,15 +20,15 @@ namespace Latvian.Tagging.Perceptron
 {
     public class IndexedSentence : IEnumerable<Token>
     {
-        private readonly List<Token> tokens;
+        private readonly Token[] tokens;
         private readonly Dictionary<Token, int> indexes;
 
         public IndexedSentence(IEnumerable<Token> tokens)
         {
-            this.tokens = tokens.ToList();
+            this.tokens = tokens.ToArray();
             this.indexes = new Dictionary<Token, int>();
 
-            for (int i = 0; i < this.tokens.Count; i++)
+            for (int i = 0; i < this.tokens.Length; i++)
                 this.indexes[this.tokens[i]] = i;
         }
 
@@ -44,12 +44,12 @@ namespace Latvian.Tagging.Perceptron
 
         public int Count
         {
-            get { return tokens.Count; }
+            get { return tokens.Length; }
         }
 
         public IEnumerator<Token> GetEnumerator()
         {
-            return tokens.GetEnumerator();
+            return ((IEnumerable<Token>)tokens).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
