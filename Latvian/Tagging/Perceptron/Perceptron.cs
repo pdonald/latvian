@@ -147,7 +147,7 @@ namespace Latvian.Tagging.Perceptron
     {
         public void Save(Stream stream)
         {
-            using (BinaryWriter writer = new BinaryWriter(stream))
+            using (BinaryWriter writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true))
             {
                 writer.Write(weights.Count);
 
@@ -170,7 +170,7 @@ namespace Latvian.Tagging.Perceptron
         {
             weights = new Dictionary<Tag, Dictionary<Feature, Weight>>();
 
-            using (BinaryReader reader = new BinaryReader(stream))
+            using (BinaryReader reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true))
             {
                 int tagCount = reader.ReadInt32();
                 for (int t = 0; t < tagCount; t++)
@@ -184,6 +184,53 @@ namespace Latvian.Tagging.Perceptron
                         Feature feature = new Feature(reader.ReadString(), reader.ReadString());
                         Weight weight = new Weight { Value = reader.ReadDouble() };
                         weights[tag].Add(feature, weight);
+                    }
+                }
+            }
+        }
+    }
+
+    public class PerceptronString : Perceptron<string>
+    {
+        public void Save(Stream stream)
+        {
+            using (BinaryWriter writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true))
+            {
+                writer.Write(weights.Count);
+
+                foreach (string s in weights.Keys)
+                {
+                    writer.Write(s);
+                    writer.Write(weights[s].Count);
+
+                    foreach (Feature feature in weights[s].Keys)
+                    {
+                        writer.Write(feature.Name);
+                        writer.Write(feature.Value);
+                        writer.Write(weights[s][feature].Value);
+                    }
+                }
+            }
+        }
+
+        public void Load(Stream stream)
+        {
+            weights = new Dictionary<string, Dictionary<Feature, Weight>>();
+
+            using (BinaryReader reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true))
+            {
+                int tagCount = reader.ReadInt32();
+                for (int t = 0; t < tagCount; t++)
+                {
+                    string s = reader.ReadString();
+                    weights[s] = new Dictionary<Feature, Weight>();
+
+                    int featureCount = reader.ReadInt32();
+                    for (int f = 0; f < featureCount; f++)
+                    {
+                        Feature feature = new Feature(reader.ReadString(), reader.ReadString());
+                        Weight weight = new Weight { Value = reader.ReadDouble() };
+                        weights[s].Add(feature, weight);
                     }
                 }
             }

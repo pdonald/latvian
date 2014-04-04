@@ -27,7 +27,7 @@ namespace Latvian.Tagging.Perceptron
     public class PerceptronTagger : ITrainedTagger
     {
         private Perceptron perceptronMsd;
-        private Perceptron<string> perceptronLemma;
+        private PerceptronString perceptronLemma;
         private Helpers.XorShiftRandom random;
         private List<FeatureTemplate> featureTemplatesTag;
         private List<FeatureTemplate> featureTemplatesLemma;
@@ -104,13 +104,16 @@ namespace Latvian.Tagging.Perceptron
                 throw new ArgumentNullException("filename");
             if (perceptronMsd == null)
                 throw new InvalidOperationException("Can't save a model that has not been loaded or trained.");
-
-            // todo: load/save feature templates + other tag classes + other settings + versioning
+            
             using (Stream stream = new GZipStream(new FileStream(filename, FileMode.Create, FileAccess.Write), CompressionLevel.Optimal))
-            {
-                perceptronMsd.Save(stream);
-                // todo: lemma perceptron
-            }
+                Save(stream);
+        }
+
+        public void Save(Stream stream)
+        {
+            // todo: load/save feature templates + other tag classes + other settings + versioning
+            perceptronMsd.Save(stream);
+            perceptronLemma.Save(stream);
         }
 
         public void Load(string filename)
@@ -118,19 +121,19 @@ namespace Latvian.Tagging.Perceptron
             if (filename == null)
                 throw new ArgumentNullException("filename");
 
-            using (Stream stream = new FileStream(filename, FileMode.Open, FileAccess.Read))
+            using (Stream stream = new GZipStream(new FileStream(filename, FileMode.Open, FileAccess.Read), CompressionMode.Decompress))
                 Load(stream);
         }
 
-        protected void Load(Stream stream)
+        public void Load(Stream stream)
         {
             if (stream == null)
                 throw new ArgumentNullException("stream");
 
             perceptronMsd = new Perceptron();
-
-            using (Stream decompressed = new GZipStream(stream, CompressionMode.Decompress))
-                perceptronMsd.Load(decompressed);
+            perceptronMsd.Load(stream);
+            perceptronLemma = new PerceptronString();
+            perceptronLemma.Load(stream);
         }
         #endregion
 
@@ -172,10 +175,10 @@ namespace Latvian.Tagging.Perceptron
         public void Train(IEnumerable<Sentence> sentences)
         {
             perceptronMsd = new Perceptron();
-            perceptronLemma = new Perceptron<string>();
+            perceptronLemma = new PerceptronString();
 
-            List<IndexedSentence> normalizedSentences =
-                sentences.Select(s => new IndexedSentence((Reverse ? (s as IEnumerable<Token>).Reverse() : s).Select(t => Normalize(t)))).ToList();
+            IndexedSentence[] normalizedSentences =
+                sentences.Select(s => new IndexedSentence((Reverse ? (s as IEnumerable<Token>).Reverse() : s).Select(t => Normalize(t)))).ToArray();
 
             HashSet<Tag> alltags = new HashSet<Tag>();
             foreach (IndexedSentence sentence in normalizedSentences)
@@ -203,7 +206,7 @@ namespace Latvian.Tagging.Perceptron
                             continue;
                         }
 
-                        IEnumerable<Tag> possibleTags = token.PossibleTags;
+                        IEnumerable<Tag> possibleTags = token.PossibleTags.OrderBy(t => t.Msd).ToArray();
                         if (possibleTags == null || !possibleTags.Any())
                             possibleTags = alltags;
 
