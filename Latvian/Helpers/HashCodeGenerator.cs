@@ -16,6 +16,40 @@ namespace Latvian.Helpers
 {
     public static class HashCodeGenerator
     {
+        public static int Create(object arg0)
+        {
+            int hashCode = 27;
+            hashCode = (13 * hashCode) + (arg0 != null ? arg0.GetHashCode() : 0);
+            return hashCode;
+        }
+
+        public static int Create(object arg0, object arg1)
+        {
+            int hashCode = 27;
+            hashCode = (13 * hashCode) + (arg0 != null ? arg0.GetHashCode() : 0);
+            hashCode = (13 * hashCode) + (arg1 != null ? arg1.GetHashCode() : 0);
+            return hashCode;
+        }
+
+        public static int Create(object arg0, object arg1, object arg2)
+        {
+            int hashCode = 27;
+            hashCode = (13 * hashCode) + (arg0 != null ? arg0.GetHashCode() : 0);
+            hashCode = (13 * hashCode) + (arg1 != null ? arg1.GetHashCode() : 0);
+            hashCode = (13 * hashCode) + (arg2 != null ? arg2.GetHashCode() : 0);
+            return hashCode;
+        }
+
+        public static int Create(object arg0, object arg1, object arg2, object arg3)
+        {
+            int hashCode = 27;
+            hashCode = (13 * hashCode) + (arg0 != null ? arg0.GetHashCode() : 0);
+            hashCode = (13 * hashCode) + (arg1 != null ? arg1.GetHashCode() : 0);
+            hashCode = (13 * hashCode) + (arg2 != null ? arg2.GetHashCode() : 0);
+            hashCode = (13 * hashCode) + (arg3 != null ? arg3.GetHashCode() : 0);
+            return hashCode;
+        }
+
         public static int Create(params object[] args)
         {
             int hashCode = 27;
