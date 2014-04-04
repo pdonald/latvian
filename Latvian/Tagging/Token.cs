@@ -24,23 +24,27 @@ namespace Latvian.Tagging
 
         public Token(string token, IEnumerable<Tag> possibleTags)
         {
+#if DEBUG
             if (token == null)
                 throw new ArgumentNullException("token");
             if (possibleTags == null)
                 throw new ArgumentNullException("possibleTags");
-            //if (possibleTags.Count() == 0)
-                //throw new ArgumentException("possibleTags must contain at least one tag");
+            if (possibleTags.Count() == 0)
+                throw new ArgumentException("possibleTags must contain at least one tag");
+#endif
 
             Text = token.ToLower();
             TextTrueCase = token;
-            PossibleTags = possibleTags.Distinct().OrderBy(t => t.Msd).ToArray();
+            PossibleTags = possibleTags.ToArray();
         }
 
         public Token(string token, IEnumerable<Tag> possibleTags, Tag correctTag, Sentence sentence)
             : this(token, possibleTags)
         {
-            //if (correctTag != null && !possibleTags.Any(t => t.Equals(correctTag)))
-                //throw new ArgumentOutOfRangeException("possibleTags must contain correctTag");
+#if DEBUG
+            if (correctTag != null && !possibleTags.Any(t => t.Equals(correctTag)))
+                throw new ArgumentOutOfRangeException("possibleTags must contain correctTag");
+#endif
 
             CorrectTag = correctTag;
             Sentence = sentence;
@@ -48,8 +52,10 @@ namespace Latvian.Tagging
 
         public Token(Token token)
         {
+#if DEBUG
             if (token == null)
                 throw new ArgumentNullException("token");
+#endif
 
             Text = token.Text;
             TextTrueCase = token.TextTrueCase;
@@ -130,6 +136,11 @@ namespace Latvian.Tagging
 
         public Sentence(IEnumerable<Token> tokens)
             : base(tokens)
+        {
+        }
+
+        public Sentence(int capacity)
+            : base(capacity)
         {
         }
 
