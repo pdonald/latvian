@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace Latvian.Tagging.Evaluation
 {
-    public class CrossValidation<T> where T : ITrainedTagger
+    public class CrossValidation<T> where T : ITrainableTagger
     {
         public CrossValidation()
         {
@@ -62,7 +62,7 @@ namespace Latvian.Tagging.Evaluation
                     if (j != i)
                         result.Train.AddRange(folds[j].Select(sentence => sentence.Clone()));
 
-                ITrainedTagger tagger = Activator.CreateInstance<T>();
+                ITrainableTagger tagger = Activator.CreateInstance<T>();
                 
                 if (tagger is Tagging.Perceptron.PerceptronTagger)
                 {

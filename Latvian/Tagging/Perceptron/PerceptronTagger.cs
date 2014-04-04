@@ -24,7 +24,7 @@ namespace Latvian.Tagging.Perceptron
     using Normalizer = Func<Token, Token>;
     using Unnormalizer = Action<Token>; // todo: rename
 
-    public class PerceptronTagger : ITrainedTagger
+    public class PerceptronTagger : ITrainableTagger
     {
         private Perceptron perceptronMsd;
         private PerceptronString perceptronLemma;

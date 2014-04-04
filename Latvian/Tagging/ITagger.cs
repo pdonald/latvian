@@ -18,10 +18,10 @@ namespace Latvian.Tagging
 {
     public interface ITagger
     {
-        void Tag(IEnumerable<Sentence> sentences); // todo: streaming
+        void Tag(IEnumerable<Sentence> sentences);
     }
 
-    public interface ITrainedTagger : ITagger
+    public interface ITrainableTagger : ITagger
     {
         void Train(IEnumerable<Sentence> sentences);
     }

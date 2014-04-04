@@ -18,7 +18,7 @@ using System.Linq;
 
 namespace Latvian.Tagging.Evaluation
 {
-    class Tester<T> where T : ITrainedTagger
+    class Tester<T> where T : ITrainableTagger
     {
         private Helpers.XorShiftRandom random = new Helpers.XorShiftRandom();
         private List<Sentence> corpus = new List<Sentence>();
