@@ -41,12 +41,12 @@ namespace Latvian.Tagging.Evaluation
         public IEnumerable<Token> Tokens { get { return corpus.SelectMany(t => t); } }
         public IEnumerable<Tag> Tags { get { return corpus.SelectMany(t => t).SelectMany(t => t.PossibleTags).Distinct(); } }
 
-        public CrossValidation<T>.Results CrossValidate(int folds = 10)
+        public CrossValidationResults CrossValidate(int folds = 10)
         {
             CrossValidation<T> xval = new CrossValidation<T>();
             xval.Folds = folds;
             xval.Sentences.AddRange(corpus);
-            CrossValidation<T>.Results results = xval.Evaluate();
+            CrossValidationResults results = xval.Evaluate();
             return results;
         }
 

@@ -34,7 +34,9 @@ namespace Latvian.Tagging.Evaluation
         public uint RandomSeed { get; set; }
         public List<Sentence> Sentences { get; private set; }
 
-        public Results Evaluate()
+        public event Action<double> Progress;
+
+        public CrossValidationResults Evaluate()
         {
             Helpers.XorShiftRandom random = new Helpers.XorShiftRandom(RandomSeed);
             List<Sentence> sentences = Randomize ? Sentences.OrderBy(s => random.NextUInt()).ToList() : Sentences;
@@ -46,14 +48,14 @@ namespace Latvian.Tagging.Evaluation
             for (int i = 0; i < sentences.Count; i++)
                 folds[i % Folds].Add(sentences[i]);
 
-            Results results = new Results();
+            CrossValidationResults results = new CrossValidationResults();
             DateTime start = DateTime.Now;
 
-            int iterationsStarted = 0;
+            int iterationsCount = 0;
 
             Parallel.For(0, Folds, (i) =>
             {
-                Results.Result result = new Results.Result();
+                CrossValidationResults.Result result = new CrossValidationResults.Result();
                 result.Fold = i + 1;
                 result.Test = folds[i].Select(sentence => sentence.Clone()).ToList();
                 result.Train = new List<Sentence>();
@@ -66,10 +68,12 @@ namespace Latvian.Tagging.Evaluation
                 
                 if (tagger is Tagging.Perceptron.PerceptronTagger)
                 {
-                    ((Tagging.Perceptron.PerceptronTagger)tagger).IterationStarted += (it) =>
+                    Tagging.Perceptron.PerceptronTagger ptagger = tagger as Tagging.Perceptron.PerceptronTagger;
+                    ptagger.IterationFinished += (it) =>
                     {
-                        lock (folds) iterationsStarted++;
-                        System.Diagnostics.Debug.WriteLine(string.Format("Fold {0} iteration {1}, {2:0}% done", i, it, 100 * ((double)iterationsStarted / (Folds * Folds))));
+                        lock (folds) iterationsCount++;
+                        if (Progress != null) 
+                            Progress(((double)iterationsCount / (ptagger.Iterations * Folds)));
                     };
                 }
 
@@ -83,95 +87,156 @@ namespace Latvian.Tagging.Evaluation
 
             return results;
         }
+    }
 
-        public class Results : List<Results.Result>
+    public class CrossValidationResults : List<CrossValidationResults.Result>
+    {
+        public TimeSpan Duration
         {
-            public TimeSpan Duration
-            {
-                get;
-                set;
-            }
+            get;
+            set;
+        }
 
-            public double Mean
-            {
-                get { return this.Sum(r => r.CorrectPercentage) / this.Count; }
-            }
+        public double Mean
+        {
+            get { return this.Sum(r => r.CorrectPercentage) / this.Count; }
+        }
 
-            public double StandardDeviation
+        public double MeanMsd
+        {
+            get { return this.Sum(r => r.CorrectMsd) / this.Count; }
+        }
+
+        public double MeanLemma
+        {
+            get { return this.Sum(r => r.CorrectLemma) / this.Count; }
+        }
+
+        public double StandardDeviation
+        {
+            get
+            {
+                double mean = Mean;
+                return Math.Sqrt(this.Sum(r => Math.Pow(r.CorrectPercentage - mean, 2)) / (this.Count - 1));
+            }
+        }
+
+        public ConfidenceInterval ConfidenceIntervalAt99
+        {
+            get { return new ConfidenceInterval(0.99, Mean, StandardDeviation, Count); }
+        }
+
+        public ConfidenceInterval ConfidenceIntervalAt95
+        {
+            get { return new ConfidenceInterval(0.95, Mean, StandardDeviation, Count); }
+        }
+
+        public ConfidenceInterval ConfidenceIntervalAt90
+        {
+            get { return new ConfidenceInterval(0.90, Mean, StandardDeviation, Count); }
+        }
+
+        public class Result
+        {
+            public int Fold { get; set; }
+            public List<Sentence> Train { get; set; }
+            public List<Sentence> Test { get; set; }
+
+            public IEnumerable<Token> WrongTags { get { return Test.SelectMany(t => t).Where(t => !t.IsTagCorrect); } }
+            public IEnumerable<Token> WrongMsds { get { return Test.SelectMany(t => t).Where(t => !t.IsMsdCorrect); } }
+            public IEnumerable<Token> WrongLemmas { get { return Test.SelectMany(t => t).Where(t => !t.IsLemmaCorrect); } }
+
+            public double CorrectPercentage
             {
                 get
                 {
-                    double mean = Mean;
-                    return Math.Sqrt(this.Sum(r => Math.Pow(r.CorrectPercentage - mean, 2)) / (this.Count - 1));
+                    Token[] tokens = Test.SelectMany(t => t).ToArray();
+                    return 100 * ((double)tokens.Count(t => t.IsCorrect) / tokens.Count());
                 }
             }
 
-            public ConfidenceInterval ConfidenceIntervalAt99
+            public double CorrectMsd
             {
-                get { return new ConfidenceInterval(Mean, MarginOfError(2.58)); }
-            }
-
-            public ConfidenceInterval ConfidenceIntervalAt95
-            {
-                get { return new ConfidenceInterval(Mean, MarginOfError(1.96)); }
-            }
-
-            public ConfidenceInterval ConfidenceIntervalAt90
-            {
-                get { return new ConfidenceInterval(Mean, MarginOfError(1.645)); }
-            }
-
-            public double MarginOfError(double z)
-            {
-                return z * StandardDeviation / Math.Sqrt(this.Count);
-            }
-
-            public class ConfidenceInterval
-            {
-                public ConfidenceInterval(double mean, double marginOfError)
+                get
                 {
-                    Lower = mean - marginOfError;
-                    Upper = mean + marginOfError;
-                }
-
-                public double Lower { get; private set; }
-                public double Upper { get; private set; }
-
-                public override string ToString()
-                {
-                    return string.Format("{0} - {1}", Lower, Upper);
+                    Token[] tokens = Test.SelectMany(t => t).ToArray();
+                    return 100 * ((double)tokens.Count(t => t.IsMsdCorrect) / tokens.Count());
                 }
             }
 
-            public class Result
+            public double CorrectLemma
             {
-                public int Fold { get; set; }
-                public List<Sentence> Train { get; set; }
-                public List<Sentence> Test { get; set; }
-
-                public IEnumerable<Token> WrongTags { get { return Test.SelectMany(t => t).Where(t => !t.IsTagCorrect); } }
-                public IEnumerable<Token> WrongMsds { get { return Test.SelectMany(t => t).Where(t => !t.IsMsdCorrect); } }
-                public IEnumerable<Token> WrongLemmas { get { return Test.SelectMany(t => t).Where(t => !t.IsLemmaCorrect); } }
-
-                public double CorrectPercentage
+                get
                 {
-                    get
-                    {
-                        Token[] tokens = Test.SelectMany(t => t).ToArray();
-                        return 100 * ((double)tokens.Count(t => t.IsCorrect) / tokens.Count());
-                    }
-                }
-
-                public double WrongPercentage
-                {
-                    get { return 100 - CorrectPercentage; }
-                }
-
-                public override string ToString()
-                {
-                    return "#" + Fold + " - " + CorrectPercentage;
+                    Token[] tokens = Test.SelectMany(t => t).ToArray();
+                    return 100 * ((double)tokens.Count(t => t.IsLemmaCorrect) / tokens.Count());
                 }
             }
+
+            public double WrongPercentage
+            {
+                get { return 100 - CorrectPercentage; }
+            }
+
+            public override string ToString()
+            {
+                return "#" + Fold + " - " + CorrectPercentage;
+            }
+        }
+    }
+
+    public struct ConfidenceInterval
+    {
+        public readonly double Percentage;
+        public readonly double Lower;
+        public readonly double Upper;
+
+        public ConfidenceInterval(double p, double mean, double marginOfError)
+        {
+            Percentage = p;
+            Lower = mean - marginOfError;
+            Upper = mean + marginOfError;
+        }
+
+        public ConfidenceInterval(double p, double mean, double stddev, double count)
+            : this(p, mean, MarginOfError(Z(p), stddev, count))
+        {
+        }
+
+        public ConfidenceInterval(double p, double mean, double stddev, double count, double z)
+            : this(p, mean, MarginOfError(z, stddev, count))
+        {
+        }
+
+        public ConfidenceInterval(double p, IEnumerable<double> percentages)
+        {
+            double sum = percentages.Sum();
+            double count = percentages.Count();
+            double mean = sum / count;
+            double stddev = Math.Sqrt(percentages.Sum(r => Math.Pow(r - mean, 2)) / (count - 1));;
+            double marginOfError = MarginOfError(Z(p), stddev, count);
+            Percentage = p;
+            Lower = mean - marginOfError;
+            Upper = mean + marginOfError;
+        }
+
+        public static double Z(double p)
+        {
+            if (p == 0.99) return 2.58;
+            if (p == 0.95) return 1.96;
+            if (p == 0.90) return 1.645;
+
+            throw new NotImplementedException();
+        }
+
+        public static double MarginOfError(double z, double stddev, double count)
+        {
+            return z * stddev / Math.Sqrt(count);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0} - {1}", Lower, Upper);
         }
     }
 }
