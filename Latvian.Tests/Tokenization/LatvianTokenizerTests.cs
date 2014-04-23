@@ -93,5 +93,30 @@ namespace Latvian.Tests.Tokenization
         [Test] public void date2() { Test("2009.12.14", "2009.12.14"); }
         [Test] public void date3() { Test("9999.99.99", "9999.99.99"); }
         [Test] public void date4() { Test("0000-00-00", "0000-00-00"); }
+
+        [Test]
+        public void sentences() { Test("Šodien ir skaista diena. Man ir tas, ko Tu prasīji. Ir jau arī tādas lietas. Viņš ir dzīvs. jau arī tādas lietas. Viņš ir dzīvs...",
+            "Šodien", " ", "ir", " ", "skaista", " ", "diena", ".", " ", 
+            "Man", " ", "ir", " ", "tas", ",", " ", "ko", " ", "Tu", " ", "prasīji", ".", " ",
+            "Ir", " ", "jau", " ", "arī", " ", "tādas", " ", "lietas", ".", " ",
+            "Viņš", " ", "ir", " ", "dzīvs", ".", " ",
+            "jau", " ", "arī", " ", "tādas", " ", "lietas", ".", " ",
+            "Viņš", " ", "ir", " ", "dzīvs", "..."); }
+
+        [Test]
+        public void english()
+        {
+            Test("Insert. Some text here!\nand here",
+                "Insert", ".", " ", "Some", " ", "text", " ", "here", "!", "\n", "and", " ", "here");
+        }
+
+        [Test]
+        public void quotes()
+        {
+            Test("neskaidrs:\nFirst. „Some thing,” seometing else, „some thing”\nFirst. “Some thing,” seometing else, “some thing!”",
+                "neskaidrs", ":", "\n",
+                "First", ".", " ", "„", "Some", " ", "thing", ",", "”", " ", "seometing", " ", "else", ",", " ", "„", "some", " ", "thing", "”", "\n",
+                "First", ".", " ", "“", "Some", " ", "thing", ",", "”", " ", "seometing", " ", "else", ",", " ", "“", "some", " ", "thing", "!", "”");
+        }
     }
 }

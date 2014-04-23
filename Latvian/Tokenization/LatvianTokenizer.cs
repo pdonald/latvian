@@ -44,8 +44,13 @@ namespace Latvian.Tokenization
             Add<IPAddressToken>();
             Add<HypenedWordToken>();
             Add<InitialsToken>();
+            Add<NumberingToken>();
             Add<LettersWithSpacesToken>();
+            Add<LettersWithPeriodsToken>();
             Add<SymbolToken>();
+            Add<SingleQuotesToken>();
+            Add<DoubleQuotesToken>();
+            Add<DomainToken>();
             Add<CyrillicToken>();
             Add<ControlCharsToken>();
             Add<ByteOrderMarkToken>();
@@ -77,12 +82,12 @@ namespace Latvian.Tokenization
             return tokens;
         }
 
-        public IEnumerable<Sentence> TokenizeSentences(IEnumerable<char> text)
+        public virtual IEnumerable<Sentence> TokenizeSentences(IEnumerable<char> text)
         {
             return BreakSentences(Tokenize(text));
         }
 
-        public IEnumerable<Sentence> BreakSentences(IEnumerable<Token> tokens) // todo: this is not a real/serious implementation
+        public virtual IEnumerable<Sentence> BreakSentences(IEnumerable<Token> tokens) // todo: this is not a real/serious implementation
         {
             List<Token> sentence = new List<Token>();
 
@@ -102,7 +107,7 @@ namespace Latvian.Tokenization
         }
 
         #region Load/Save
-        public void Load(string filename, bool compile = true)
+        public virtual void Load(string filename, bool compile = true)
         {
             base.Load(filename);
 

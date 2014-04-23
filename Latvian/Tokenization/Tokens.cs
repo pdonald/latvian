@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace Latvian.Tokenization
 {
@@ -61,13 +62,26 @@ namespace Latvian.Tokenization
         public abstract class PatternToken : Token, IHasPattern
         {
             protected const string Letter = "a-zA-ZĀ-ž";
-            protected const string UppercaseLetter = "A-Z";
+            protected const string UppercaseLetter = "A-ZĀČĒĢĪĶĻŅŌŖŠŪŽ";
             protected const string Digit = "0-9";
             protected const string Whitespace = " \t\r\n";
             protected const string Punctuation = ".,!?:;";
-            protected const string Symbol = "\\-~'\"&^#$@*()_";
+            protected const string Symbol = "\\-~&^#$@*()_";
+            protected const string DoubleQuotes = "\"„”“”";
+            protected const string SingleQuotes = "'";
+            protected const string Quotes = DoubleQuotes + SingleQuotes;
 
             public abstract string Pattern { get; }
+
+            protected static string FormatExpression(string s)
+            {
+                return "[" + string.Join("].[", s.Select(c => char.ToLower(c).ToString() + char.ToUpper(c).ToString())) + "]";
+            }
+
+            protected static string JoinExpressions(IEnumerable<string> expressions)
+            {
+                return "(" + string.Join(")|(", expressions) + ")";
+            }
         }
 
         public class WordToken : PatternToken
@@ -334,11 +348,20 @@ namespace Latvian.Tokenization
             }
         }
 
+        public class NumberingToken : PatternToken
+        {
+            public override string Pattern
+            {
+                // 1.3a.
+                get { return @"([0-9].[.].[0-9].[a-zA-Z].[.])"; }
+            }
+        }
+
         public class UrlToken : PatternToken
         {
             public override string Pattern
             {
-                get { return "[a-zA-Z]+.[:].[//].[a-zA-Z0-9.,=\\-?!&+/\\()]+"; }
+                get { return @"[a-zA-Z]+.[:].[//].[//].[-a-zA-Z0-9.,=?!:&+/\()]+"; }
             }
 
             public Uri Uri
@@ -352,6 +375,21 @@ namespace Latvian.Tokenization
             public override string Pattern
             {
                 get { return "[w].[w].[w].[.].[a-zA-Z0-9\\-]+.[.].[a-z]+"; }
+            }
+
+            public Uri Uri
+            {
+                get { return new Uri("http://" + Text, UriKind.Absolute); }
+            }
+        }
+
+        public class DomainToken : PatternToken
+        {
+            private static readonly string[] domains = new[] { "lv", "com", "net", "org", "co.uk" };
+
+            public override string Pattern
+            {
+                get { return "[a-zA-Z0-9\\-]+.[.].(" + JoinExpressions(domains.Select(d => FormatExpression(d))) + ")+"; }
             }
 
             public Uri Uri
@@ -385,7 +423,11 @@ namespace Latvian.Tokenization
         {
             public override string Pattern
             {
-                get { return "([" + UppercaseLetter + "].[.])|([D].[zž].[.])"; }
+                get
+                {
+                    string initials = "([" + UppercaseLetter + "])|([D].[zž])|([K].[r])";
+                    return "(" + initials + ")" + ".[.]";
+                }
             }
         }
 
@@ -399,6 +441,19 @@ namespace Latvian.Tokenization
             public string TextWithoutSpaces
             {
                 get { return Text.Replace(" ", ""); }
+            }
+        }
+
+        public class LettersWithPeriodsToken : PatternToken
+        {
+            public override string Pattern
+            {
+                get { return "([" + Letter + "].[.])+.[" + Letter + "].[.]"; }
+            }
+
+            public string TextWithoutPeriods
+            {
+                get { return Text.Replace(".", ""); }
             }
         }
 
@@ -431,6 +486,26 @@ namespace Latvian.Tokenization
             public override string Pattern
             {
                 get { return "[\u0000-\uffff]"; }
+            }
+        }
+
+        public abstract class QuotesToken : PatternToken
+        {
+        }
+
+        public class SingleQuotesToken : QuotesToken
+        {
+            public override string Pattern
+            {
+                get { return "[" + SingleQuotes + "]"; }
+            }
+        }
+
+        public class DoubleQuotesToken : QuotesToken
+        {
+            public override string Pattern
+            {
+                get { return "[" + DoubleQuotes + "]"; }
             }
         }
     }
