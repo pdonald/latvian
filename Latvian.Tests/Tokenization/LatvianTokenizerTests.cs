@@ -31,7 +31,7 @@ namespace Latvian.Tests.Tokenization
         private void Test(string text, params string[] expected)
         {    
             string[] tokens;
-            
+
             tokens = tokenizer.Tokenize(text).Select(t => t.Text).ToArray();
             CollectionAssert.AreEqual(expected, tokens);
 
@@ -61,12 +61,13 @@ namespace Latvian.Tests.Tokenization
         [Test] public void epasts() { Test("uz e-pastu vards.uzvards@domains.lv", new[] { "uz", " ", "e-pastu", " ", "vards.uzvards@domains.lv" }); }
         [Test] public void teikums_ar_punktu() { Test("es eju.", "es", " ", "eju", "."); }
         [Test] public void saites () { Test("no http://www.faili.lv/fails.php?id=215 šejienes", "no", " ", "http://www.faili.lv/fails.php?id=215", " ", "šejienes"); }
+        [Test] public void saites2 () { Test("vai interneta (http://some.hypersite.com/soemthing/som?ewerd_type?tx:).", "vai", " ", "interneta", " ", "(", "http://some.hypersite.com/soemthing/som?ewerd_type?tx:", ")"); }
         [Test] public void saites_ftp() { Test("Ftp adrese ftp://www.faili.lv/fails.php?id=215&actions=download", "Ftp", " ", "adrese", " ", "ftp://www.faili.lv/fails.php?id=215&actions=download"); }
         [Test] public void saites_www() { Test("mājaslapa www.skaistas-vietas.lv", "mājaslapa", " ", "www.skaistas-vietas.lv"); }
         [Test] public void daļskaitļi() { Test("Nobalsoja 1/2 no balstiesīgajiem", "Nobalsoja", " ", "1/2", " ", "no", " ", "balstiesīgajiem"); }
         [Test] public void tūkstoši() { Test("Šobrīd tiešsaitē ir 12'456 lietotāji", "Šobrīd", " ", "tiešsaitē", " ", "ir", " ", "12'456", " ", "lietotāji"); }
         [Test] public void ipadrese() { Test("Servera IP adrese ir 132.168.2.102", "Servera", " ", "IP", " ", "adrese", " ", "ir", " ", "132.168.2.102"); }
-        [Test] public void nauda1() { Test("Ls 5.- gadā", "Ls", " ", "5.-", " ", "gadā"); }
+        [Test] public void nauda1() { Test("Ls 5,- gadā", "Ls", " ", "5,-", " ", "gadā"); }
         [Test] public void nauda2() { Test("pusgadā Ls 3,-", "pusgadā", " ", "Ls", " ", "3,-"); }
         [Test] public void nauda3() { Test("Cena Ls 0.40. Nākamais", "Cena", " ", "Ls", " ", "0.40", ".", " ", "Nākamais"); }
         [Test] public void nauda4() { Test("Ls 50.000,-", "Ls", " ", "50.000,-"); }
@@ -93,6 +94,7 @@ namespace Latvian.Tests.Tokenization
         [Test] public void date2() { Test("2009.12.14", "2009.12.14"); }
         [Test] public void date3() { Test("9999.99.99", "9999.99.99"); }
         [Test] public void date4() { Test("0000-00-00", "0000-00-00"); }
+        [Test] public void daterange() { Test("2005.-2008. gadam", "2005.", "-", "2008.", " ", "gadam"); }
 
         [Test]
         public void sentences() { Test("Šodien ir skaista diena. Man ir tas, ko Tu prasīji. Ir jau arī tādas lietas. Viņš ir dzīvs. jau arī tādas lietas. Viņš ir dzīvs...",

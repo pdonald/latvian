@@ -75,7 +75,7 @@ namespace Latvian.Tokenization
 
             protected static string FormatExpression(string s)
             {
-                return "[" + string.Join("].[", s.Select(c => char.ToLower(c).ToString() + char.ToUpper(c).ToString())) + "]";
+                return "[" + string.Join("].[", s.Select(c => char.ToLower(c) != char.ToUpper(c) ? char.ToLower(c).ToString() + char.ToUpper(c).ToString() : c.ToString())) + "]";
             }
 
             protected static string JoinExpressions(IEnumerable<string> expressions)
@@ -335,7 +335,7 @@ namespace Latvian.Tokenization
         {
             public override string Pattern
             {
-                get { return "([0-9]+|([0-9]+.[.].[0-9]+)+).[,.].[-]"; }
+                get { return "([0-9]+|([0-9]+.[.].[0-9]+)+).[,].[-]"; }
             }
 
             public decimal Value
@@ -361,7 +361,7 @@ namespace Latvian.Tokenization
         {
             public override string Pattern
             {
-                get { return @"[a-zA-Z]+.[:].[//].[//].[-a-zA-Z0-9.,=?!:&+/\()]+"; }
+                get { return @"[a-zA-Z]+.[:].[//].[//].[-a-zA-Z0-9.,_=?!:&+/\()]*.[-a-zA-Z0-9_=?:&+/\]"; }
             }
 
             public Uri Uri

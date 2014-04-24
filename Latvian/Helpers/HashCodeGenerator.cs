@@ -14,7 +14,7 @@
 
 namespace Latvian.Helpers
 {
-    public static class HashCodeGenerator
+    static class HashCodeGenerator
     {
         public static int Create(object arg0)
         {

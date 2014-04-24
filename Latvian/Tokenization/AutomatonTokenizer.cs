@@ -200,7 +200,9 @@ namespace Latvian.Tokenization
                 
                 if (end.Position != reader.Position)
                 {
-                    yield return CreateToken(reader, end, reader.PositionCounter, null);
+                    reader.MoveBack(end.Position - 1);
+                    foreach (Token token in Tokenize(reader))
+                        yield return token;
                 }
             }
             else
